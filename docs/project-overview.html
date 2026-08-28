@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fiş Tarama & Gider Takip — Proje Özeti</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; }
+    .hero { background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%); padding: 80px 20px 60px; text-align: center; }
+    .hero h1 { font-size: 2.8em; margin-bottom: 10px; }
+    .hero .emoji { font-size: 4em; margin-bottom: 20px; }
+    .hero p { font-size: 1.2em; opacity: 0.9; max-width: 600px; margin: 0 auto; }
+    .hero .badges { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .badge { background: rgba(255,255,255,0.15); padding: 6px 16px; border-radius: 20px; font-size: 0.85em; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
+    .section { margin-bottom: 50px; }
+    .section h2 { font-size: 1.8em; margin-bottom: 20px; color: #93c5fd; }
+    .section h3 { font-size: 1.2em; margin-bottom: 10px; color: #c4b5fd; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; }
+    .card h3 { color: #93c5fd; margin-bottom: 10px; }
+    .card .icon { font-size: 2em; margin-bottom: 10px; }
+    .card ul { padding-left: 20px; }
+    .card li { margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #334155; }
+    th { background: #1e293b; color: #93c5fd; font-weight: 600; }
+    td { background: #0f172a; }
+    code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'Fira Code', monospace; font-size: 0.9em; color: #fbbf24; }
+    pre { background: #1e293b; padding: 20px; border-radius: 8px; overflow-x: auto; border: 1px solid #334155; margin-top: 10px; }
+    pre code { background: none; padding: 0; color: #e2e8f0; }
+    .tech-stack { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 15px; }
+    .tech-item { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px 18px; display: flex; align-items: center; gap: 8px; }
+    .tech-item .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-blue { background: #3b82f6; }
+    .dot-green { background: #22c55e; }
+    .dot-purple { background: #a855f7; }
+    .dot-yellow { background: #eab308; }
+    .dot-red { background: #ef4444; }
+    .dot-gray { background: #6b7280; }
+    .dot-cyan { background: #06b6d4; }
+    .architecture { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 30px; margin-top: 20px; }
+    .arch-row { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+    .arch-box { background: #0f172a; border: 1px solid #475569; border-radius: 8px; padding: 12px 18px; text-align: center; min-width: 140px; }
+    .arch-box.primary { border-color: #3b82f6; background: rgba(59,130,246,0.1); }
+    .arch-box.secondary { border-color: #a855f7; background: rgba(168,85,247,0.1); }
+    .arch-box.tertiary { border-color: #22c55e; background: rgba(34,197,94,0.1); }
+    .arch-arrow { color: #475569; font-size: 1.5em; }
+    .footer { text-align: center; padding: 40px; color: #64748b; border-top: 1px solid #1e293b; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
+    .stat { background: #1e293b; border-radius: 10px; padding: 20px; text-align: center; }
+    .stat .num { font-size: 2em; font-weight: 700; color: #93c5fd; }
+    .stat .label { color: #94a3b8; font-size: 0.85em; margin-top: 4px; }
+    .highlight { color: #fbbf24; }
+    .tag { display: inline-block; background: rgba(59,130,246,0.15); color: #93c5fd; padding: 2px 10px; border-radius: 12px; font-size: 0.8em; margin: 2px; }
+    .tag-green { background: rgba(34,197,94,0.15); color: #86efac; }
+    .tag-purple { background: rgba(168,85,247,0.15); color: #d8b4fe; }
+    .tag-yellow { background: rgba(234,179,8,0.15); color: #fde68a; }
+    .tag-red { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="emoji">🧾</div>
+  <h1>Fiş Tarama & Gider Takip</h1>
+  <p>Fiş/makbuz fotoğraflarını OCR ile tarayarak KDV, tutar ve matrah bilgilerini otomatik çıkaran, Excel ve PDF raporlar üreten mobil uygulama.</p>
+  <div class="badges">
+    <span class="badge">🚀 v1.1.0</span>
+    <span class="badge">📱 React Native + Expo</span>
+    <span class="badge">⚡ FastAPI Backend</span>
+    <span class="badge">🐘 PostgreSQL</span>
+    <span class="badge">🤖 Gemini AI OCR</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    <div class="stat"><div class="num">13</div><div class="label">Commit</div></div>
+    <div class="stat"><div class="num">43+</div><div class="label">Kaynak Dosya</div></div>
+    <div class="stat"><div class="num">16</div><div class="label">Varsayılan Kategori</div></div>
+    <div class="stat"><div class="num">100+</div><div class="label">Unit Test</div></div>
+    <div class="stat"><div class="num">4</div><div class="label">KDV Oranı</div></div>
+    <div class="stat"><div class="num">12</div><div class="label">API Endpoint</div></div>
+  </div>
+
+  <!-- Tech Stack -->
+  <div class="section">
+    <h2>🛠️ Teknoloji Stack</h2>
+    <div class="tech-stack">
+      <div class="tech-item"><span class="dot dot-blue"></span> React Native + Expo</div>
+      <div class="tech-item"><span class="dot dot-green"></span> FastAPI (Python)</div>
+      <div class="tech-item"><span class="dot dot-purple"></span> PostgreSQL</div>
+      <div class="tech-item"><span class="dot dot-yellow"></span> Google Gemini AI</div>
+      <div class="tech-item"><span class="dot dot-gray"></span> Tesseract OCR</div>
+      <div class="tech-item"><span class="dot dot-cyan"></span> Docker Compose</div>
+      <div class="tech-item"><span class="dot dot-red"></span> SQLAlchemy ORM</div>
+      <div class="tech-item"><span class="dot dot-blue"></span> OpenPyXL (Excel)</div>
+      <div class="tech-item"><span class="dot dot-green"></span> ReportLab (PDF)</div>
+      <div class="tech-item"><span class="dot dot-purple"></span> Render (Deploy)</div>
+    </div>
+  </div>
+
+  <!-- Architecture -->
+  <div class="section">
+    <h2>🏗️ Mimari Yapı</h2>
+    <div class="architecture">
+      <div class="arch-row">
+        <div class="arch-box primary">📱 Mobile App<br><small>React Native / Expo</small></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box primary">🌐 REST API<br><small>FastAPI + JWT Auth</small></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box secondary">🗄️ PostgreSQL<br><small>SQLAlchemy ORM</small></div>
+      </div>
+      <div class="arch-row">
+        <div class="arch-box primary">📷 Fotoğraf<br><small>Camera / Gallery</small></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box tertiary">🤖 Gemini AI<br><small>OCR + Veri Çıkarma</small></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box secondary">📊 Rapor Üretici<br><small>Excel + PDF</small></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="section">
+    <h2>✨ Özellikler</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="icon">📷</div>
+        <h3>Fiş Tarama (OCR)</h3>
+        <ul>
+          <li>Gemini AI ile yüksek doğruluk</li>
+          <li>Tesseract fallback (çevrimdışı)</li>
+          <li>Kamera veya galeri fotoğrafı</li>
+          <li>Otomatik tutar, KDV, tarih çıkarma</li>
+          <li>Türkçe tutar formatı desteği</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon">🧮</div>
+        <h3>Çoklu KDV Desteği</h3>
+        <ul>
+          <li>Bir fişte birden fazla KDV oranı</li>
+          <li>%0, %1, %10, %20 oranları</li>
+          <li>Otomatik matrah ve KDV hesaplama</li>
+          <li>KDV döküm raporu</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon">📊</div>
+        <h3>Raporlama</h3>
+        <ul>
+          <li>Excel (.xlsx) rapor üretimi</li>
+          <li>PDF rapor üretimi</li>
+          <li>Aylık 10 günlük dönem bazlı</li>
+          <li>Firma ismi dahil başlık</li>
+          <li>Dikey A4 formatı, ₺ simgesi</li>
+          <li>KDV oranı dökümü</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon">📈</div>
+        <h3>Dashboard</h3>
+        <ul>
+          <li>Aylık gider özeti kartları</li>
+          <li>Kategori dağılımı grafikleri</li>
+          <li>Dönem karşılaştırması</li>
+          <li>KDV oranı dağılımı</li>
+          <li>Bir önceki aya göre değişim</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon">✏️</div>
+        <h3>Gider Yönetimi</h3>
+        <ul>
+          <li>Tam CRUD (ekle, düzenle, sil)</li>
+          <li>Çoklu KDV satırı düzenleme</li>
+          <li>Soft delete (çöp kutusu)</li>
+          <li>16 varsayılan kategori</li>
+          <li>Tutarlı mobil UI</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon">🔒</div>
+        <h3>Güvenlik</h3>
+        <ul>
+          <li>JWT authentication</li>
+          <li>Rate limiting (brute-force koruması)</li>
+          <li>Bcrypt şifre hashleme</li>
+          <li>CORS politikası</li>
+          <li>Otomatik veritabanı yedekleme</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Endpoints -->
+  <div class="section">
+    <h2>🔌 API Endpoint'leri</h2>
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Açıklama</th><th>Auth</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="tag">POST</span></td><td><code>/api/auth/register</code></td><td>Yeni kullanıcı kaydı</td><td>—</td></tr>
+        <tr><td><span class="tag">POST</span></td><td><code>/api/auth/login</code></td><td>Giriş yap</td><td>—</td></tr>
+        <tr><td><span class="tag-green tag">GET</span></td><td><code>/api/auth/me</code></td><td>Mevcut kullanıcı bilgisi</td><td>JWT</td></tr>
+        <tr><td><span class="tag-purple tag">PUT</span></td><td><code>/api/auth/profile</code></td><td>Profil güncelle (firma adı)</td><td>JWT</td></tr>
+        <tr><td><span class="tag-green tag">GET</span></td><td><code>/api/expenses</code></td><td>Gider listesi (sayfalama, filtre)</td><td>JWT</td></tr>
+        <tr><td><span class="tag">POST</span></td><td><code>/api/expenses</code></td><td>Yeni gider ekle</td><td>JWT</td></tr>
+        <tr><td><span class="tag-green tag">GET</span></td><td><code>/api/expenses/{id}</code></td><td>Gider detayı</td><td>JWT</td></tr>
+        <tr><td><span class="tag-purple tag">PUT</span></td><td><code>/api/expenses/{id}</code></td><td>Gider güncelle (çoklu KDV)</td><td>JWT</td></tr>
+        <tr><td><span class="tag-red tag">DELETE</span></td><td><code>/api/expenses/{id}</code></td><td>Gider sil (soft delete)</td><td>JWT</td></tr>
+        <tr><td><span class="tag">POST</span></td><td><code>/api/expenses/scan</code></td><td>Fotoğraf tara (OCR)</td><td>JWT</td></tr>
+        <tr><td><span class="tag">POST</span></td><td><code>/api/reports/excel</code></td><td>Excel rapor indir</td><td>JWT</td></tr>
+        <tr><td><span class="tag">POST</span></td><td><code>/api/reports/pdf</code></td><td>PDF rapor indir</td><td>JWT</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Project Structure -->
+  <div class="section">
+    <h2>📁 Proje Yapısı</h2>
+    <pre><code>fis-tarama/
+├── backend/
+│   ├── main.py                 # FastAPI uygulaması
+│   ├── config.py               # Ayarlar (Pydantic Settings)
+│   ├── database.py             # SQLAlchemy DB bağlantısı
+│   ├── models.py               # ORM modelleri
+│   ├── schemas.py              # Pydantic şemaları
+│   ├── requirements.txt        # Python bağımlılıkları
+│   ├── Dockerfile              # Backend container
+│   ├── .env.example            # Çevresel değişken şablonu
+│   ├── routes/
+│   │   ├── auth.py             # JWT kimlik doğrulama
+│   │   ├── expenses.py         # Gider CRUD + OCR
+│   │   └── reports.py          # Excel/PDF rapor üretimi
+│   ├── ocr/
+│   │   ├── processor.py        # OCR işleyici (orchestrator)
+│   │   ├── extractor.py        # Veri çıkarma (regex + AI)
+│   │   └── gemini_ocr.py       # Google Gemini AI entegrasyonu
+│   ├── utils/
+│   │   ├── helpers.py          # Yardımcı fonksiyonlar
+│   │   └── report_generator.py # Excel/PDF üretim mantığı
+│   ├── scripts/
+│   │   ├── backup.sh           # Veritabanı yedekleme
+│   │   └── restore.sh          # Veritabanı geri yükleme
+│   └── tests/
+│       ├── test_helpers.py     # helpers.py unit testleri
+│       ├── test_extractor.py   # extractor.py unit testleri
+│       └── test_report_generator.py  # rapor testleri
+├── mobile/
+│   ├── App.js                  # Ana navigasyon
+│   ├── package.json            # JS bağımlılıkları
+│   ├── src/
+│   │   ├── screens/            # 8 ekran
+│   │   │   ├── HomeScreen.js
+│   │   │   ├── DashboardScreen.js
+│   │   │   ├── ScanScreen.js
+│   │   │   ├── ExpensesScreen.js
+│   │   │   ├── ExpenseDetailScreen.js
+│   │   │   ├── ExpenseEditScreen.js
+│   │   │   ├── ManualAddScreen.js
+│   │   │   ├── ReportsScreen.js
+│   │   │   ├── TrashScreen.js
+│   │   │   ├── ProfileScreen.js
+│   │   │   └── LoginScreen.js
+│   │   ├── components/
+│   │   │   └── ZoomableImage.js
+│   │   ├── lib/
+│   │   │   └── api.js          # API istemcisi
+│   │   └── services/
+│   │       └── api.js          # Servis katmanı
+│   └── android/, ios/          # Platform klasörleri
+├── docker-compose.yml          # Docker orkestrasyonu
+├── backups/                    # Veritabanı yedekleri
+├── .gitignore
+└── README.md</code></pre>
+  </div>
+
+  <!-- Setup -->
+  <div class="section">
+    <h2>🚀 Kurulum</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>1. Gereksinimler</h3>
+        <ul>
+          <li>Docker & Docker Compose</li>
+          <li>Node.js 18+ (Expo için)</li>
+          <li>Google Gemini API Key (opsiyonel)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>2. Backend (Docker)</h3>
+        <pre><code>cd fis-tarama
+# .env dosyasını oluştur
+cp backend/.env.example backend/.env
+# JWT_SECRET değiştir!
+docker compose up --build -d</code></pre>
+      </div>
+      <div class="card">
+        <h3>3. Mobil Uygulama</h3>
+        <pre><code>cd fis-tarama/mobile
+npm install
+npx expo start</code></pre>
+      </div>
+      <div class="card">
+        <h3>4. Testler</h3>
+        <pre><code>docker compose exec backend \
+  python -m pytest tests/ -v</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Database Backup -->
+  <div class="section">
+    <h2>💾 Veritabanı Yedekleme</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Otomatik Yedekleme</h3>
+        <ul>
+          <li>Her gün saat 02:00'de çalışır</li>
+          <li>Backups klasörüne gzip sıkıştırılmış</li>
+          <li>Tüm kayıtlar süresiz saklanır</li>
+          <li>24 saatten eski raporlar otomatik temizlenir</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Manuel Yedekleme</h3>
+        <pre><code># Yedek al
+docker compose exec backup \
+  sh /app/scripts/backup.sh
+
+# Yedekleri listele
+ls -lh backups/
+
+# Geri yükle
+docker compose exec backup \
+  sh /app/scripts/restore.sh \
+  fis_tarama_20260828_0200.sql.gz</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Environment Variables -->
+  <div class="section">
+    <h2>🔑 Çevresel Değişkenler</h2>
+    <table>
+      <thead>
+        <tr><th>Değişken</th><th>Açıklama</th><th>Zorunlu</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>JWT_SECRET</code></td><td>JWT token imzalama anahtarı</td><td><span class="tag-red tag">Evet</span></td></tr>
+        <tr><td><code>DATABASE_URL</code></td><td>PostgreSQL bağlantı URL'i</td><td><span class="tag-red tag">Evet</span></td></tr>
+        <tr><td><code>GEMINI_API_KEY</code></td><td>Google Gemini AI API anahtarı</td><td><span class="tag-yellow tag">Opsiyonel</span> (Tesseract fallback var)</td></tr>
+        <tr><td><code>ENVIRONMENT</code></td><td>development / production</td><td><span class="tag">Varsayılan: development</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Security -->
+  <div class="section">
+    <h2>🛡️ Güvenlik Önlemleri</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="icon">🔐</div>
+        <h3>Kimlik Doğrulama</h3>
+        <ul>
+          <li>JWT tabanlı oturum yönetimi</li>
+          <li>Bcrypt ile şifre hashleme</li>
+          <li>Zorunlu JWT_SECRET (varsayılan yok)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon">🛡️</div>
+        <h3>Rate Limiting</h3>
+        <ul>
+          <li>Login: 5 deneme / 5 dakika</li>
+          <li>SlowAPI entegrasyonu</li>
+          <li>Brute-force koruması</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon">🌐</div>
+        <h3>CORS & Veri</h3>
+        <ul>
+          <li>Production'da izinli domain listesi</li>
+          <li>Soft delete ile veri koruması</li>
+          <li>Otomatik DB yedekleme</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Fiş Tarama & Gider Takip v1.1.0 — <a href="https://github.com/badoov34/Fis-Tarama" style="color:#93c5fd">GitHub</a></p>
+  <p style="margin-top:8px">🧾 Mali müşavirler için gider takip ve raporlama sistemi</p>
+</div>
+
+</body>
+</html>
