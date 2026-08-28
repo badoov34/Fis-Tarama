@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+venv*/
+
+# Uploads
+backend/uploads/
+*.jpg
+*.jpeg
+*.png
+*.webp
+
+# Reports (generated)
+*.xlsx
+*.pdf
+
+# Node
+node_modules/
+.expo/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Docker
+docker-compose.override.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

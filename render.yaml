@@ -1,0 +1,33 @@
+# Render.com servis tanımı
+# Bu dosyayı GitHub repolarına koyun, Render otomatik tanır
+
+services:
+  # Backend API (FastAPI + Tesseract OCR)
+  - type: web
+    name: fis-tarama-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fis-tarama-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true  # Otomatik güçlü şifre üret
+      - key: UPLOAD_DIR
+        value: /app/uploads
+      - key: TESSERACT_LANG
+        value: tur
+      - key: ENVIRONMENT
+        value: production
+      - key: PORT
+        value: 8000
+    healthCheckPath: /health
+    autoDeploy: true  # GitHub push edince otomatik deploy
+
+  # PostgreSQL veritabanı
+  - type: postgresql
+    name: fis-tarama-db
+    plan: free  # Ücretsiz plan: 1 GB, 90 gün
+    ipAllowList: []  # Sadece aynı workspace içinden erişim

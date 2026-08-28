@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Fiş Tarama",
+    "slug": "fis-tarama",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0284C7"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fistarama.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Fiş ve makbuz fotoğraflarını çekmek için kamera erişimi gerekli.",
+        "NSPhotoLibraryUsageDescription": "Mevcut fiş fotoğraflarını seçmek için galeri erişimi gerekli."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0284C7"
+      },
+      "package": "com.fistarama.app",
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Fiş ve makbuz fotoğraflarını çekmek için kamera erişimi gerekli."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mevcut fiş fotoğraflarını seçmek için galeri erişimi gerekli."
+        }
+      ]
+    ]
+  }
+}
