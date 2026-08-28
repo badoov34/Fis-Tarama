@@ -54,6 +54,7 @@ class ExpenseUpdate(BaseModel):
     net_amount: Optional[float] = None
     vat_rate: Optional[float] = None
     vat_amount: Optional[float] = None
+    vat_items: Optional[List[VatItemIn]] = None  # Çoklu KDV satırları
     vendor_name: Optional[str] = None
     receipt_date: Optional[date] = None
     receipt_number: Optional[str] = None

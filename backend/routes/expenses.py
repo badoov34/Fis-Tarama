@@ -328,9 +328,22 @@ def update_expense(
     # Güncellenen alanları uygula
     updates = {}
     for field, value in data.model_dump(exclude_unset=True).items():
-        if value is not None:
+        if value is not None and field != "vat_items":
             setattr(exp, field, value)
             updates[field] = value
+
+    # Çoklu KDV satırlarını güncelle
+    if data.vat_items is not None:
+        vat_items_list = []
+        for item in data.vat_items:
+            vat_items_list.append({
+                "vat_rate": item.vat_rate,
+                "total_amount": item.total_amount or 0,
+                "net_amount": item.net_amount or 0,
+                "vat_amount": item.vat_amount or 0,
+            })
+        exp.vat_items_json = json.dumps(vat_items_list)
+        updates["vat_items"] = True
 
     # Tutar veya KDV oranı değiştiyse yeniden hesapla
     if "total_amount" in updates or "vat_rate" in updates or "net_amount" in updates:
