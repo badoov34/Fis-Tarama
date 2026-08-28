@@ -57,7 +57,7 @@ services:
       - ./backups:/backups
       - ./backend/scripts:/app/scripts:ro
     entrypoint: /bin/sh
-    command: -c "chmod +x /app/scripts/backup.sh && echo '0 2 * * * /app/scripts/backup.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root && crond -f -l 2"
+    command: -c "echo '0 2 * * * /app/scripts/backup.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root && crond -f -l 2"
     # Manuel yedekleme için:
     # docker compose run --rm backup /app/scripts/backup.sh
 
