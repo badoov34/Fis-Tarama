@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # PostgreSQL veritabanı
   db:
@@ -42,6 +40,47 @@ services:
     volumes:
       - uploads:/app/uploads
 
+  # Veritabanı Yedekleme (her gün saat 02:00'de otomatik çalışır)
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: fis_tarama
+      DB_USER: fis_user
+      DB_PASSWORD: fis_sifre
+    volumes:
+      - backups:/backups
+      - ./backend/scripts:/app/scripts:ro
+    entrypoint: /bin/sh
+    command: -c "chmod +x /app/scripts/backup.sh && echo '0 2 * * * /app/scripts/backup.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root && crond -f -l 2"
+    # Manuel yedekleme için:
+    # docker compose run --rm backup /app/scripts/backup.sh
+
+  # Manuel yedekleme / geri yükleme (bir kere çalıştırılır)
+  backup-run:
+    image: postgres:16-alpine
+    profiles: ["backup"]  # Sadece manuel çalıştırma
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: fis_tarama
+      DB_USER: fis_user
+      DB_PASSWORD: fis_sifre
+    volumes:
+      - backups:/backups
+      - ./backend/scripts:/app/scripts:ro
+    entrypoint: /bin/sh
+    command: /app/scripts/backup.sh
+
 volumes:
   pgdata:
   uploads:
+  backups:
