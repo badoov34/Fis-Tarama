@@ -57,7 +57,7 @@ def extract_text_from_image(image_path: str, lang: Optional[str] = None) -> str:
         logger.info(f"Tesseract OCR başarılı — {len(text)} karakter okundu")
         return text.strip()
     except pytesseract.TesseractError as e:
-        logger.error(f"Tesseract OCR hatası: {e}")
+        logger.error(f"Tesseract OCR hatası: {e}", exc_info=True)
         try:
             text = pytesseract.image_to_string(
                 processed_img,
@@ -164,7 +164,7 @@ def scan_with_tesseract(image_path: str) -> Optional[Dict[str, Any]]:
             "suggestion": ocr_result.suggestion,
         }
     except Exception as e:
-        logger.error(f"Tesseract OCR hatası: {e}")
+        logger.error(f"Tesseract OCR hatası: {e}", exc_info=True)
         return None
 
 

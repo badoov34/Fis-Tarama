@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     database_url: str = get_database_url()
 
     # JWT
-    jwt_secret: str = os.getenv("JWT_SECRET", "gizli-burayi-degisin-lutfen")
+    jwt_secret: str = os.getenv("JWT_SECRET", "")
     jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
     access_token_expire_days: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_DAYS", "365"))
 
@@ -65,3 +65,9 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+if not settings.jwt_secret:
+    raise RuntimeError(
+        "JWT_SECRET ortam değişkeni ayarlanmamış! "
+        ".env dosyasına JWT_SECRET=guclu-bir-sifre ekleyin."
+    )

@@ -6,10 +6,14 @@ import os
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer
+from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from config import settings
 from database import init_db
@@ -22,6 +26,32 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def _cleanup_old_reports(upload_dir: str, max_age_hours: int = 24):
+    """Eski rapor dosyalarını temizle — 24 saatten eski olanları sil."""
+    import time
+    reports_dir = os.path.join(upload_dir, "reports")
+    if not os.path.exists(reports_dir):
+        return
+
+    now = time.time()
+    max_age_seconds = max_age_hours * 3600
+    cleaned = 0
+
+    for filename in os.listdir(reports_dir):
+        filepath = os.path.join(reports_dir, filename)
+        try:
+            if os.path.isfile(filepath):
+                file_age = now - os.path.getmtime(filepath)
+                if file_age > max_age_seconds:
+                    os.remove(filepath)
+                    cleaned += 1
+        except OSError:
+            pass
+
+    if cleaned > 0:
+        logger.info(f"🗑️ {cleaned} eski rapor dosyası temizlendi")
 
 
 @asynccontextmanager
@@ -50,6 +80,9 @@ async def lifespan(app: FastAPI):
     # Upload klasörünü oluştur
     os.makedirs(settings.upload_dir, exist_ok=True)
     logger.info(f"✅ Upload klasörü: {settings.upload_dir}")
+
+    # Eski rapor dosyalarını temizle (24 saatten eski)
+    _cleanup_old_reports(settings.upload_dir)
 
     logger.info("🎯 Uygulama hazır!")
     yield
@@ -94,10 +127,19 @@ app = FastAPI(
 )
 app.openapi = custom_openapi
 
+# Rate Limiting — brute-force koruması
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # CORS — mobil uygulamadan erişim için
+CORS_ORIGINS = ["*"] if settings.environment == "development" else [
+    "http://localhost:19006",  # Expo Go
+    "http://localhost:8081",    # Metro bundler
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Geliştirme aşamasında tüm kaynaklara izin ver
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

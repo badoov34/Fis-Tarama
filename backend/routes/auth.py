@@ -3,8 +3,9 @@ import bcrypt
 import jwt
 import os
 import uuid
+import logging
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Response, Header, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Response, Header, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -13,7 +14,13 @@ from models import User
 from schemas import UserCreate, UserLogin, UserOut, TokenOut
 from config import settings
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth", tags=["Kimlik Doğrulama"])
+
+# Rate limiting için basit in-memory sayaç
+_login_attempts = {}  # {ip: [(timestamp, success), ...]}
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_WINDOW_SECONDS = 300  # 5 dakika
 
 
 def hash_password(password: str) -> str:
@@ -81,6 +88,29 @@ def require_auth(authorization: Optional[str] = Header(None), db: Session = Depe
 # ENDPOINTS
 # ============================================================================
 
+def _check_rate_limit(ip: str) -> bool:
+    """IP adresi için rate limit kontrolü — son 5 dakikada 5 başarısız deneme."""
+    import time
+    now = time.time()
+    # Eski kayıtları temizle
+    if ip in _login_attempts:
+        _login_attempts[ip] = [
+            (ts, ok) for ts, ok in _login_attempts[ip]
+            if now - ts < LOGIN_WINDOW_SECONDS
+        ]
+    # Başarısız denemeleri say
+    failures = sum(1 for ts, ok in _login_attempts.get(ip, []) if not ok)
+    return failures < LOGIN_MAX_ATTEMPTS
+
+
+def _record_attempt(ip: str, success: bool):
+    """Giriş denemesini kaydet."""
+    import time
+    if ip not in _login_attempts:
+        _login_attempts[ip] = []
+    _login_attempts[ip].append((time.time(), success))
+
+
 @router.post("/register", response_model=TokenOut)
 def register(data: UserCreate, db: Session = Depends(get_db)):
     """Yeni kullanıcı kaydı."""
@@ -117,14 +147,26 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenOut)
-def login(data: UserLogin, db: Session = Depends(get_db)):
-    """Kullanıcı girişi."""
+def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
+    """Kullanıcı girişi — rate limit korumalı."""
+    client_ip = request.client.host if request.client else "unknown"
+
+    # Rate limit kontrolü
+    if not _check_rate_limit(client_ip):
+        logger.warning(f"Rate limit aşıldı: {client_ip}")
+        raise HTTPException(
+            status_code=429,
+            detail=f"Çok fazla deneme. {LOGIN_WINDOW_SECONDS // 60} dakika sonra tekrar deneyin.",
+        )
+
     email = data.email.lower().strip()
     user = db.query(User).filter(User.email == email).first()
 
     if not user or not verify_password(data.password, user.password_hash):
+        _record_attempt(client_ip, False)
         raise HTTPException(status_code=401, detail="E-posta veya şifre yanlış")
 
+    _record_attempt(client_ip, True)
     token = create_access_token(user.id, user.email)
     return TokenOut(
         access_token=token,

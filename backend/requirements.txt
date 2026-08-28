@@ -16,3 +16,4 @@ httpx==0.28.1
 aiofiles==24.1.0
 gunicorn==22.0.0
 google-generativeai==0.8.4
+slowapi==0.1.9

@@ -111,7 +111,7 @@ async def scan_receipt(
         from ocr.processor import scan_receipt
         result = scan_receipt(filepath)
     except Exception as e:
-        logger.error(f"OCR hatası: {e}")
+        logger.error(f"OCR hatası: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Fotoğraf işlenirken bir hata oluştu. Lütfen tekrar deneyin.",

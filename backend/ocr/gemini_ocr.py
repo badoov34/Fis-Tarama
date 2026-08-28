@@ -197,10 +197,10 @@ def _parse_gemini_response(response_text: str) -> Optional[Dict[str, Any]]:
         return data
 
     except json.JSONDecodeError as e:
-        logger.error(f"Gemini JSON parse hatası: {e}\nYanıt: {response_text[:500]}")
+        logger.error(f"Gemini JSON parse hatası: {e}\nYanıt: {response_text[:500]}", exc_info=True)
         return None
     except Exception as e:
-        logger.error(f"Gemini yanıt işleme hatası: {e}")
+        logger.error(f"Gemini yanıt işleme hatası: {e}", exc_info=True)
         return None
 
 
@@ -271,7 +271,7 @@ def scan_receipt_with_gemini(image_path: str) -> Optional[Dict[str, Any]]:
         return result
 
     except Exception as e:
-        logger.error(f"Gemini OCR hatası: {e}")
+        logger.error(f"Gemini OCR hatası: {e}", exc_info=True)
         return None
 
 
