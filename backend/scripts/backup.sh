@@ -19,7 +19,7 @@ DB_HOST="${DB_HOST:-db}"
 DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-fis_tarama}"
 DB_USER="${DB_USER:-fis_user}"
-RETENTION_DAYS=7
+# Tüm yedekler süresiz saklanır (iş mali müşavirlik için gerekli)
 
 # Tarih damgası
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -47,14 +47,9 @@ PGPASSWORD="${DB_PASSWORD:-fis_sifre}" pg_dump \
 BACKUP_SIZE=$(du -h "${BACKUP_FILE}" | cut -f1)
 echo "✅ Yedekleme tamamlandı: ${BACKUP_FILE} (${BACKUP_SIZE})"
 
-# Eski yedekleri temizle (son 7 gün)
-echo "🧹 ${RETENTION_DAYS} günden eski yedekler temizleniyor..."
-find "${BACKUP_DIR}" -name "fis_tarama_*.sql.gz" -mtime +${RETENTION_DAYS} -delete -print | \
-  while read f; do echo "   🗑️ Silindi: $(basename $f)"; done
-
-# Mevcut yedekleri listele
+# Tüm yedekler saklanır (iş mali müşavirlik için gerekli)
 echo ""
-echo "📋 Mevcut yedekler:"
+echo "📋 Mevcut yedekler ($(ls ${BACKUP_DIR}/fis_tarama_*.sql.gz 2>/dev/null | wc -l) adet):"
 ls -lh "${BACKUP_DIR}"/fis_tarama_*.sql.gz 2>/dev/null | awk '{print "   " $NF " (" $5 ")"}' || echo "   (henüz yedek yok)"
 
 echo ""
