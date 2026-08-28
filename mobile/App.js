@@ -19,6 +19,7 @@ import ScanScreen from "./src/screens/ScanScreen";
 import ManualAddScreen from "./src/screens/ManualAddScreen";
 import ExpensesScreen from "./src/screens/ExpensesScreen";
 import ReportsScreen from "./src/screens/ReportsScreen";
+import DashboardScreen from "./src/screens/DashboardScreen";
 import ExpenseDetailScreen from "./src/screens/ExpenseDetailScreen";
 import ExpenseEditScreen from "./src/screens/ExpenseEditScreen";
 import TrashScreen from "./src/screens/TrashScreen";
@@ -34,9 +35,10 @@ const inactiveColor = "#94A3B8";
 function TabIcon({ label, focused }) {
   const icons = {
     "Ana Sayfa": "🏠",
+    "Dashboard": "📊",
     "Giderler": "📋",
     "Tara": "📷",
-    "Rapor": "📊",
+    "Rapor": "📈",
     "Çöp": "🗑️",
     "Profil": "👤",
   };
@@ -66,6 +68,7 @@ function MainTabs({ onLogout }) {
       })}
     >
       <Tab.Screen name="Ana Sayfa" component={HomeScreen} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Giderler" component={ExpensesScreen} />
       <Tab.Screen
         name="Tara"
