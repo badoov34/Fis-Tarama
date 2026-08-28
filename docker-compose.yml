@@ -54,7 +54,7 @@ services:
       DB_USER: fis_user
       DB_PASSWORD: fis_sifre
     volumes:
-      - backups:/backups
+      - ./backups:/backups
       - ./backend/scripts:/app/scripts:ro
     entrypoint: /bin/sh
     command: -c "chmod +x /app/scripts/backup.sh && echo '0 2 * * * /app/scripts/backup.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root && crond -f -l 2"
@@ -75,7 +75,7 @@ services:
       DB_USER: fis_user
       DB_PASSWORD: fis_sifre
     volumes:
-      - backups:/backups
+      - ./backups:/backups
       - ./backend/scripts:/app/scripts:ro
     entrypoint: /bin/sh
     command: /app/scripts/backup.sh
@@ -83,4 +83,3 @@ services:
 volumes:
   pgdata:
   uploads:
-  backups:
