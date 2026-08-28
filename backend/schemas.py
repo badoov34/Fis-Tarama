@@ -49,6 +49,14 @@ class ExpenseCreate(BaseModel):
     is_manually_edited: Optional[bool] = False
 
 
+class VatItemIn(BaseModel):
+    """Tek bir KDV satırı — frontend'den gelen."""
+    vat_rate: float
+    total_amount: Optional[float] = 0
+    net_amount: Optional[float] = 0
+    vat_amount: Optional[float] = 0
+
+
 class ExpenseUpdate(BaseModel):
     total_amount: Optional[float] = None
     net_amount: Optional[float] = None
@@ -61,14 +69,6 @@ class ExpenseUpdate(BaseModel):
     category: Optional[str] = None
     description: Optional[str] = None
     is_manually_edited: Optional[bool] = None
-
-
-class VatItemIn(BaseModel):
-    """Tek bir KDV satırı — frontend'den gelen."""
-    vat_rate: float
-    total_amount: Optional[float] = 0
-    net_amount: Optional[float] = 0
-    vat_amount: Optional[float] = 0
 
 
 class ExpenseFromScan(BaseModel):
