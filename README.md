@@ -148,6 +148,33 @@ sudo lsof -i :8000
 
 ---
 
+## 📊 Dashboard
+
+Ana sayfadaki Dashboard ekranı şu bilgileri gösterir:
+
+- **Özet Kartları:** Toplam gider, matrah, KDV, kayıt sayısı
+- **Kategori Dağılımı:** Yatay bar grafiği ile yüzdelik dağılım
+- **Dönem Karşılaştırması:** 10 günlük dönemlerin grafiksel karşılaştırması
+- **KDV Oranı Dağılımı:** %0, %1, %10, %20 oranlarının dağılımı
+- **Bir Önceki Aya Göre Değişim:** Yüzdelik artış/azalış
+
+---
+
+## 🧪 Testler
+
+```bash
+# Docker içinde testleri çalıştır
+docker-compose exec backend python -m pytest tests/ -v
+
+# Sadece belirli bir test dosyası
+docker-compose exec backend python -m pytest tests/test_helpers.py -v
+
+# Hızlı özet
+docker-compose exec backend python -m pytest tests/ -v --tb=short
+```
+
+---
+
 ## 📱 Mobil Uygulama Kurulumu
 
 Geliştirme bilgisi olanlar için:
@@ -186,20 +213,29 @@ npx expo start
 
 - **Backend:** Python + FastAPI
 - **Veritabanı:** PostgreSQL 16
-- **OCR:** Tesseract (Türkçe)
-- **PDF:** ReportLab
-- **Excel:** OpenPyXL
+- **OCR:** Google Gemini AI (birincil) + Tesseract (yedek)
+- **PDF:** ReportLab (A4 dikey)
+- **Excel:** OpenPyXL (A4 dikey, ₺ simgeli)
 - **Mobil:** React Native + Expo
+- **Grafikler:** react-native-svg (Dashboard)
 - **Deploy:** Docker Compose veya Render.com
 
 ---
 
 ## ⚠️ OCR Notları
 
-- Tesseract OCR ücretsizdir ancak %100 doğruluk garantisi yoktur
-- Kaliteli, temiz basılmış fişlerde %85-95 doğruluk bekleyebilirsiniz
-- El yazısı veya soluk basılı fişlerde doğruluk düşebilir
-- Her zaman sonuçları kontrol edip onaylamanız önerilir
+**Google Gemini AI (Birincil):**
+- Yüksek doğruluk ile OCR yapar (AI tabanlı)
+- Ücretsiz plan: 15 istek/dakika
+- `GEMINI_API_KEY` ortam değişkeni ile aktif edilir
+- Gemini kullanılamıyorsa otomatik olarak Tesseract'a geçer
+
+**Tesseract OCR (Yedek):**
+- İnternet gerekmez
+- %85-95 doğruluk (kaliteli fişlerde)
+- El yazısı veya soluk fişlerde doğruluk düşebilir
+
+Her zaman sonuçları kontrol edip onaylamanız önerilir.
 
 ---
 

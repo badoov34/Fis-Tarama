@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import http, { fmtTL, fmtDate } from "../lib/api";
 
 const CATEGORIES = {
-  akaryakıt: "⛽", yemek: "🍽️", ulaşım: "🚗", kira: "🏠", personel: "👥",
+  market: "🛒", akaryakıt: "⛽", yemek: "🍽️", ulaşım: "🚗", kira: "🏠", personel: "👥",
   malzeme: "📦", faturalar: "📄", telefon: "📱", internet: "🌐", bakım: "🔧",
   temizlik: "🧹", reklam: "📢", sigorta: "🛡️", vergi: "💰", diğer: "📋",
 };
