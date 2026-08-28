@@ -18,7 +18,7 @@ from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm, mm
 from reportlab.platypus import (
@@ -165,13 +165,13 @@ def generate_excel_report(
     output_path: str,
     company_name: str = "",
 ) -> str:
-    """Aylık 10 günlük dönem Excel raporu — A4 yatay format.
+    """Aylık 10 günlük dönem Excel raporu — A4 dikey format.
 
     Format:
     - Satır 1: (Firma İsmi) X.Ay (AyAdı) Yıl DÖNEMİ
     - Satır 4: Periyodik Toplam | 1-10 | 11-20 | 21-aysonu | Genel Toplam
     - Satır 5: KDV oranları (alt sütunlar, %0 hariç)
-    - Satır 6+: Gider tutarları
+    - Satır 6+: Gider tutarları (₺ ile)
     - Alt satırlar: KDV Dahil Tutar, Toplam Matrah, Toplam KDV
     """
     wb = Workbook()
@@ -292,7 +292,7 @@ def generate_excel_report(
 
                     cell = ws.cell(row=row, column=c, value=amount if amount > 0 else None)
                     cell.font = NORMAL_FONT
-                    cell.number_format = '#,##0.00'
+                    cell.number_format = '#,##0.00 ₺'
                     cell.border = THIN_BORDER
             else:
                 for rate in active_rates:
@@ -308,7 +308,7 @@ def generate_excel_report(
         formula = "=" + "+".join(all_col_refs)
         cell = ws.cell(row=row, column=grand_total_col, value=formula)
         cell.font = NORMAL_FONT
-        cell.number_format = '#,##0.00'
+        cell.number_format = '#,##0.00 ₺'
         cell.border = THIN_BORDER
 
         row += 1
@@ -334,7 +334,7 @@ def generate_excel_report(
             formula = f"=SUM({col_letter}{data_start_row}:{col_letter}{data_end_row})"
             cell = ws.cell(row=row, column=c, value=formula)
             cell.font = TOTAL_FONT
-            cell.number_format = '#,##0.00'
+            cell.number_format = '#,##0.00 ₺'
             cell.fill = TOTAL_FILL
             cell.border = THIN_BORDER
 
@@ -346,7 +346,7 @@ def generate_excel_report(
             grand_refs.append(f"{get_column_letter(c)}{row}")
     cell = ws.cell(row=row, column=grand_total_col, value="=" + "+".join(grand_refs))
     cell.font = TOTAL_FONT
-    cell.number_format = '#,##0.00'
+    cell.number_format = '#,##0.00 ₺'
     cell.fill = TOTAL_FILL
     cell.border = THIN_BORDER
 
@@ -370,7 +370,7 @@ def generate_excel_report(
                 formula = f"={col_letter}{kdv_dahil_row}"
             cell = ws.cell(row=row, column=c, value=formula)
             cell.font = TOTAL_FONT
-            cell.number_format = '#,##0.00'
+            cell.number_format = '#,##0.00 ₺'
             cell.fill = TOTAL_FILL
             cell.border = THIN_BORDER
 
@@ -382,7 +382,7 @@ def generate_excel_report(
             grand_refs.append(f"{get_column_letter(c)}{row}")
     cell = ws.cell(row=row, column=grand_total_col, value="=" + "+".join(grand_refs))
     cell.font = TOTAL_FONT
-    cell.number_format = '#,##0.00'
+    cell.number_format = '#,##0.00 ₺'
     cell.fill = TOTAL_FILL
     cell.border = THIN_BORDER
 
@@ -402,7 +402,7 @@ def generate_excel_report(
             formula = f"={col_letter}{kdv_dahil_row}-{col_letter}{row - 1}"
             cell = ws.cell(row=row, column=c, value=formula)
             cell.font = TOTAL_FONT
-            cell.number_format = '#,##0.00'
+            cell.number_format = '#,##0.00 ₺'
             cell.fill = TOTAL_FILL
             cell.border = THIN_BORDER
 
@@ -414,7 +414,7 @@ def generate_excel_report(
             grand_refs.append(f"{get_column_letter(c)}{row}")
     cell = ws.cell(row=row, column=grand_total_col, value="=" + "+".join(grand_refs))
     cell.font = TOTAL_FONT
-    cell.number_format = '#,##0.00'
+    cell.number_format = '#,##0.00 ₺'
     cell.fill = TOTAL_FILL
     cell.border = THIN_BORDER
 
@@ -428,9 +428,9 @@ def generate_excel_report(
             ws.column_dimensions[get_column_letter(c)].width = 13
     ws.column_dimensions[get_column_letter(grand_total_col)].width = 15
 
-    # A4 yatay baskı ayarları
+    # A4 dikey baskı ayarları
     from openpyxl.worksheet.properties import PageSetupProperties
-    ws.page_setup.orientation = "landscape"
+    ws.page_setup.orientation = "portrait"
     ws.page_setup.paperSize = ws.PAPERSIZE_A4
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 0  # Yükseklik otomatik (gider sayısına göre)
@@ -490,7 +490,7 @@ def generate_excel_report(
             for c in range(1, 8):
                 ws_detail.cell(row=detail_row, column=c).border = THIN_BORDER
                 if c >= 5:
-                    ws_detail.cell(row=detail_row, column=c).number_format = '#,##0.00'
+                    ws_detail.cell(row=detail_row, column=c).number_format = '#,##0.00 ₺'
 
             period_total += exp.get("total_amount", 0)
             period_net += exp.get("net_amount") or 0
@@ -509,7 +509,7 @@ def generate_excel_report(
                     for c in range(1, 8):
                         ws_detail.cell(row=detail_row, column=c).border = THIN_BORDER
                         if c >= 5:
-                            ws_detail.cell(row=detail_row, column=c).number_format = '#,##0.00'
+                            ws_detail.cell(row=detail_row, column=c).number_format = '#,##0.00 ₺'
                     detail_row += 1
 
         # Dönem toplamı
@@ -524,9 +524,9 @@ def generate_excel_report(
             cell.fill = TOTAL_FILL
             cell.border = THIN_BORDER
             if c >= 5:
-                cell.number_format = '#,##0.00'
+                cell.number_format = '#,##0.00 ₺'
 
-        # Sütun genişlikleri
+        # Sütun genişlikleri ve dikey A4
         ws_detail.column_dimensions["A"].width = 14
         ws_detail.column_dimensions["B"].width = 25
         ws_detail.column_dimensions["C"].width = 30
@@ -534,6 +534,18 @@ def generate_excel_report(
         ws_detail.column_dimensions["E"].width = 16
         ws_detail.column_dimensions["F"].width = 14
         ws_detail.column_dimensions["G"].width = 16
+
+        # A4 dikey baskı ayarları (detay sayfası)
+        from openpyxl.worksheet.properties import PageSetupProperties as PSP2
+        ws_detail.page_setup.orientation = "portrait"
+        ws_detail.page_setup.paperSize = ws_detail.PAPERSIZE_A4
+        ws_detail.page_setup.fitToWidth = 1
+        ws_detail.page_setup.fitToHeight = 0
+        ws_detail.sheet_properties.pageSetUpPr = PSP2(fitToPage=True)
+        ws_detail.page_margins.left = 0.5
+        ws_detail.page_margins.right = 0.5
+        ws_detail.page_margins.top = 0.75
+        ws_detail.page_margins.bottom = 0.75
 
     # Kaydet
     wb.save(output_path)
@@ -561,7 +573,7 @@ def generate_pdf_report(
 
     doc = SimpleDocTemplate(
         output_path,
-        pagesize=landscape(A4),
+        pagesize=A4,
         leftMargin=1.5 * cm,
         rightMargin=1.5 * cm,
         topMargin=2 * cm,
@@ -695,8 +707,8 @@ def generate_pdf_report(
             Paragraph(format_turkish_lira(totals["total"]), bold_style),
         ])
 
-        # Tabloyu oluştur
-        col_widths = [2.2*cm, 4.5*cm, 5*cm, 3.5*cm, 3*cm, 2.5*cm, 3*cm]
+        # Tabloyu oluştur — dikey A4 için daraltılmış sütunlar
+        col_widths = [1.8*cm, 3.5*cm, 4*cm, 2.2*cm, 2.5*cm, 2*cm, 2.5*cm]
         table = Table(table_data, colWidths=col_widths, repeatRows=1)
 
         # Stil
@@ -759,7 +771,7 @@ def generate_pdf_report(
         ],
     ]
 
-    summary_table = Table(summary_data, colWidths=[4*cm, 4.5*cm, 3.5*cm, 4*cm])
+    summary_table = Table(summary_data, colWidths=[3.5*cm, 4*cm, 3.5*cm, 4*cm])
     summary_style = TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0284C7")),
         ("TOPPADDING", (0, 0), (-1, -1), 8),
@@ -819,7 +831,7 @@ def generate_pdf_report(
             Paragraph(f"<b>{format_turkish_lira(grand_total)}</b>", ParagraphStyle("vtt", fontName=PDF_FONT_BOLD, fontSize=10, alignment=TA_CENTER)),
         ])
 
-        vat_table = Table(vat_detail_data, colWidths=[3*cm, 2.5*cm, 4*cm, 3.5*cm, 4*cm])
+        vat_table = Table(vat_detail_data, colWidths=[2.5*cm, 2*cm, 3.5*cm, 3*cm, 3.5*cm])
         vat_table_style = TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#92400E")),
             ("TOPPADDING", (0, 0), (-1, -1), 8),
