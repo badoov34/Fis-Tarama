@@ -480,10 +480,15 @@ def generate_excel_report(
             ws_detail.cell(row=detail_row, column=1, value=exp.get("receipt_date", "")).font = NORMAL_FONT
             ws_detail.cell(row=detail_row, column=2, value=exp.get("vendor_name", "")).font = NORMAL_FONT
 
-            # Fiş No / VKN sütunu
+            # Fiş No / VKN sütunu — ikisi de varsa birlikte göster
             receipt_no = exp.get("receipt_number", "")
             vkn = exp.get("vkn", "")
-            fis_vkn_text = receipt_no or vkn or ""
+            parts = []
+            if receipt_no:
+                parts.append(receipt_no)
+            if vkn:
+                parts.append(f"VKN:{vkn}")
+            fis_vkn_text = " / ".join(parts) if parts else ""
             ws_detail.cell(row=detail_row, column=3, value=fis_vkn_text).font = NORMAL_FONT
 
             # Gider türü (kategori)
@@ -716,10 +721,15 @@ def generate_pdf_report(
             else:
                 vat_cell = Paragraph(vat_text, normal_style)
 
-            # Fiş No / VKN hücresi
+            # Fiş No / VKN hücresi — ikisi de varsa birlikte göster
             receipt_no = exp.get("receipt_number", "")
             vkn = exp.get("vkn", "")
-            fis_vkn_text = receipt_no or vkn or ""
+            parts = []
+            if receipt_no:
+                parts.append(receipt_no)
+            if vkn:
+                parts.append(f"VKN:{vkn}")
+            fis_vkn_text = " / ".join(parts) if parts else ""
 
             # Gider türü
             cat = exp.get("category", "diger")
