@@ -1,376 +1,292 @@
 /**
- * Dashboard Ekranı — Aylık gider özeti, grafikler ve karşılaştırma.
- *
- * Özellikler:
- * - Aylık toplam gider özeti
- * - Kategori bazlı yatay bar grafiği (react-native-svg)
- * - 10 günlük dönem karşılaştırması
- * - KDV oranı dağılımı
- * - Bir önceki aya göre değişim
+ * Dashboard — Aylık gider özeti, grafikler, kategori ve dönem karşılaştırması.
+ * react-native-svg ile gerçek grafikler.
  */
-import { useState, useEffect } from "react";
-import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, Dimensions,
-} from "react-native";
+import { useState, useEffect, useCallback } from "react";
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, { Rect, Text as SvgText, G, Line } from "react-native-svg";
+import Svg, { Rect, G, Line, Text as SvgText, Circle, Path } from "react-native-svg";
 import http, { fmtTL } from "../lib/api";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CHART_WIDTH = SCREEN_WIDTH - 80;
-const BAR_HEIGHT = 28;
-const BAR_GAP = 8;
-
-const MONTHS = [
-  "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-  "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
-];
+const COLORS = ["#0284C7", "#10B981", "#8B5CF6", "#F59E0B", "#EF4444", "#EC4899", "#06B6D4", "#84CC16", "#F97316", "#6366F1"];
+const SCREEN_W = Dimensions.get("window").width - 40;
 
 const CATEGORIES = {
-  market: { icon: "🛒", color: "#0284C7" },
-  akaryakıt: { icon: "⛽", color: "#DC2626" },
-  yemek: { icon: "🍽️", color: "#F59E0B" },
-  ulaşım: { icon: "🚗", color: "#7C3AED" },
-  kira: { icon: "🏠", color: "#059669" },
-  personel: { icon: "👥", color: "#EC4899" },
-  malzeme: { icon: "📦", color: "#6366F1" },
-  faturalar: { icon: "📄", color: "#14B8A6" },
-  telefon: { icon: "📱", color: "#8B5CF6" },
-  internet: { icon: "🌐", color: "#0EA5E9" },
-  bakım: { icon: "🔧", color: "#F97316" },
-  temizlik: { icon: "🧹", color: "#10B981" },
-  reklam: { icon: "📢", color: "#EF4444" },
-  sigorta: { icon: "🛡️", color: "#64748B" },
-  vergi: { icon: "💰", color: "#A855F7" },
-  diğer: { icon: "📋", color: "#94A3B8" },
+  market: "🛒 Market", akaryakıt: "⛽ Akaryakıt", yemek: "🍽️ Yemek", ulaşım: "🚗 Ulaşım",
+  kira: "🏢 Kira", personel: "👥 Personel", malzeme: "📦 Malzeme", faturalar: "💡 Faturalar",
+  telefon: "📱 Telefon", internet: "🌐 İnternet", bakım: "🔧 Bakım", temizlik: "🧹 Temizlik",
+  reklam: "📢 Reklam", sigorta: "🛡️ Sigorta", vergi: "🏛️ Vergi", diğer: "📁 Diğer",
 };
 
-const COLORS = ["#0284C7", "#DC2626", "#F59E0B", "#7C3AED", "#059669", "#EC4899", "#6366F1", "#14B8A6"];
-
-export default function DashboardScreen({ navigation }) {
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [data, setData] = useState(null);
-  const [prevData, setPrevData] = useState(null);
+export default function DashboardScreen() {
+  const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  });
 
-  const loadData = async () => {
+  const MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      // Mevcut ay verisi
-      const [reportRes, expensesRes] = await Promise.all([
-        http.get("/api/reports/monthly", { params: { year: selectedYear, month: selectedMonth } }),
-        http.get("/api/expenses", { params: { year: selectedYear, month: selectedMonth } }),
-      ]);
-
-      const report = reportRes.data;
-      const expenses = expensesRes.data;
-
-      // Kategori dağılımı hesapla
-      const categoryMap = {};
-      expenses.forEach((exp) => {
-        const cat = exp.category || "diğer";
-        if (!categoryMap[cat]) categoryMap[cat] = 0;
-        categoryMap[cat] += exp.total_amount || 0;
+      const r = await http.get("/api/reports/monthly", {
+        params: { year: selectedMonth.year, month: selectedMonth.month },
       });
-
-      // KDV oranı dağılımı
-      const vatMap = {};
-      expenses.forEach((exp) => {
-        const vatItems = exp.vat_items || (exp.vat_rate != null ? [{ vat_rate: exp.vat_rate, total_amount: exp.total_amount }] : []);
-        vatItems.forEach((item) => {
-          const rate = item.vat_rate || 0;
-          if (!vatMap[rate]) vatMap[rate] = 0;
-          vatMap[rate] += item.total_amount || 0;
-        });
-      });
-
-      setData({
-        report,
-        expenses,
-        categoryBreakdown: Object.entries(categoryMap)
-          .map(([name, amount]) => ({ name, amount }))
-          .sort((a, b) => b.amount - a.amount),
-        vatBreakdown: Object.entries(vatMap)
-          .map(([rate, amount]) => ({ rate: Number(rate), amount }))
-          .sort((a, b) => b.amount - a.amount),
-      });
-
-      // Bir önceki ay verisi (karşılaştırma için)
-      try {
-        let prevYear = selectedYear;
-        let prevMonth = selectedMonth - 1;
-        if (prevMonth < 1) { prevMonth = 12; prevYear -= 1; }
-        const prevRes = await http.get("/api/reports/monthly", { params: { year: prevYear, month: prevMonth } });
-        setPrevData(prevRes.data);
-      } catch {
-        setPrevData(null);
-      }
+      setReport(r.data);
     } catch (e) {
-      console.log("Dashboard yüklenemedi:", e.message);
+      console.log("Dashboard yükleme hatası:", e.message);
     } finally {
       setLoading(false);
     }
+  }, [selectedMonth]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Kategori dağılımı hesapla
+  const getCategoryData = () => {
+    if (!report?.periods) return [];
+    const catTotals = {};
+    report.periods.forEach(p => {
+      p.expenses.forEach(exp => {
+        const cat = exp.category || "diğer";
+        catTotals[cat] = (catTotals[cat] || 0) + (exp.total_amount || 0);
+      });
+    });
+    return Object.entries(catTotals)
+      .map(([key, value]) => ({ key, value, label: CATEGORIES[key] || key }))
+      .sort((a, b) => b.value - a.value);
   };
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", loadData);
-    return unsubscribe;
-  }, [navigation, selectedYear, selectedMonth]);
-
-  const prevMonth = () => {
-    if (selectedMonth === 1) { setSelectedMonth(12); setSelectedYear((y) => y - 1); }
-    else setSelectedMonth((m) => m - 1);
+  // KDV oranı dağılımı
+  const getVatData = () => {
+    if (!report?.periods) return [];
+    const vatTotals = {};
+    report.periods.forEach(p => {
+      p.expenses.forEach(exp => {
+        if (exp.vat_items && exp.vat_items.length > 0) {
+          exp.vat_items.forEach(item => {
+            const rate = item.vat_rate || 0;
+            vatTotals[rate] = (vatTotals[rate] || 0) + (item.vat_amount || 0);
+          });
+        } else {
+          const rate = exp.vat_rate || 0;
+          vatTotals[rate] = (vatTotals[rate] || 0) + (exp.vat_amount || 0);
+        }
+      });
+    });
+    return Object.entries(vatTotals)
+      .map(([rate, amount]) => ({ rate: Number(rate), amount }))
+      .sort((a, b) => b.amount - a.amount);
   };
 
-  const nextMonth = () => {
-    if (selectedMonth === 12) { setSelectedMonth(1); setSelectedYear((y) => y + 1); }
-    else setSelectedMonth((m) => m + 1);
-  };
-
-  // Değişim oranını hesapla
-  const calcChange = (current, previous) => {
-    if (!previous || previous === 0) return null;
-    return ((current - previous) / previous * 100).toFixed(1);
-  };
-
-  if (loading && !data) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#0284C7" style={{ marginTop: 100 }} />
-      </SafeAreaView>
-    );
-  }
-
-  const grandTotal = data?.report?.grand_totals?.total || 0;
-  const grandNet = data?.report?.grand_totals?.net || 0;
-  const grandVat = data?.report?.grand_totals?.vat || 0;
-  const expenseCount = data?.report?.grand_totals?.count || 0;
-  const prevTotal = prevData?.grand_totals?.total || 0;
-  const changePercent = calcChange(grandTotal, prevTotal);
+  const categoryData = getCategoryData();
+  const vatData = getVatData();
+  const maxCatAmount = categoryData.length > 0 ? categoryData[0].value : 1;
+  const grandTotal = report?.grand_total_amount || 0;
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>📊 Dashboard</Text>
 
-        {/* Ay Seçici */}
-        <View style={styles.monthSelector}>
-          <TouchableOpacity onPress={prevMonth} style={styles.arrowBtn}>
-            <Text style={styles.arrowText}>◀</Text>
-          </TouchableOpacity>
-          <Text style={styles.monthLabel}>{MONTHS[selectedMonth - 1]} {selectedYear}</Text>
-          <TouchableOpacity onPress={nextMonth} style={styles.arrowBtn}>
-            <Text style={styles.arrowText}>▶</Text>
-          </TouchableOpacity>
-        </View>
+        {loading ? (
+          <ActivityIndicator size="large" color="#0284C7" style={{ marginTop: 40 }} />
+        ) : !report ? (
+          <Text style={styles.emptyText}>Veri yüklenemedi.</Text>
+        ) : (
+          <>
+            {/* Özet Kartlar */}
+            <View style={styles.cardRow}>
+              <View style={[styles.summaryCard, { backgroundColor: "#EFF6FF" }]}>
+                <Text style={[styles.summaryLabel, { color: "#1E40AF" }]}>Toplam Gider</Text>
+                <Text style={[styles.summaryAmount, { color: "#1E40AF" }]}>{fmtTL(grandTotal)}</Text>
+              </View>
+              <View style={[styles.summaryCard, { backgroundColor: "#ECFDF5" }]}>
+                <Text style={[styles.summaryLabel, { color: "#065F46" }]}>Toplam Matrah</Text>
+                <Text style={[styles.summaryAmount, { color: "#065F46" }]}>{fmtTL(report.grand_total_net)}</Text>
+              </View>
+            </View>
+            <View style={styles.cardRow}>
+              <View style={[styles.summaryCard, { backgroundColor: "#F5F3FF" }]}>
+                <Text style={[styles.summaryLabel, { color: "#5B21B6" }]}>Toplam KDV</Text>
+                <Text style={[styles.summaryAmount, { color: "#5B21B6" }]}>{fmtTL(report.grand_total_vat)}</Text>
+              </View>
+              <View style={[styles.summaryCard, { backgroundColor: "#F8FAFC" }]}>
+                <Text style={[styles.summaryLabel, { color: "#475569" }]}>Kayıt Sayısı</Text>
+                <Text style={[styles.summaryAmount, { color: "#475569" }]}>{report.grand_expense_count}</Text>
+              </View>
+            </View>
 
-        {/* ═══════════════════════════════════════════════════════════════
-            1. ÖZET KARTLARI
-            ═══════════════════════════════════════════════════════════════ */}
-        <View style={styles.summaryGrid}>
-          <View style={[styles.summaryCard, { backgroundColor: "#0284C7" }]}>
-            <Text style={styles.summaryCardLabel}>Toplam Gider</Text>
-            <Text style={styles.summaryCardValue}>{fmtTL(grandTotal)}</Text>
-            {changePercent !== null && (
-              <Text style={[styles.changeBadge, {
-                color: Number(changePercent) > 0 ? "#FCA5A5" : "#6EE7B7",
-              }]}>
-                {Number(changePercent) > 0 ? "↑" : "↓"} %{Math.abs(changePercent)}
-              </Text>
+            {/* ═══ KATEGORI DAĞILIMI — YATAY BAR GRAFİĞİ ═══ */}
+            {categoryData.length > 0 && (
+              <View style={styles.chartCard}>
+                <Text style={styles.chartTitle}>📁 Kategori Dağılımı</Text>
+                {categoryData.map((item, idx) => {
+                  const pct = maxCatAmount > 0 ? (item.value / maxCatAmount) * 100 : 0;
+                  const pctTotal = grandTotal > 0 ? ((item.value / grandTotal) * 100).toFixed(1) : 0;
+                  return (
+                    <View key={item.key} style={styles.barRow}>
+                      <Text style={styles.barLabel} numberOfLines={1}>{item.label}</Text>
+                      <View style={styles.barContainer}>
+                        <View style={[styles.bar, {
+                          width: `${Math.max(pct, 2)}%`,
+                          backgroundColor: COLORS[idx % COLORS.length],
+                        }]} />
+                      </View>
+                      <Text style={styles.barValue}>{fmtTL(item.value)}</Text>
+                      <Text style={styles.barPct}>{pctTotal}%</Text>
+                    </View>
+                  );
+                })}
+              </View>
             )}
-          </View>
 
-          <View style={[styles.summaryCard, { backgroundColor: "#059669" }]}>
-            <Text style={styles.summaryCardLabel}>Toplam Matrah</Text>
-            <Text style={styles.summaryCardValue}>{fmtTL(grandNet)}</Text>
-          </View>
+            {/* ═══ KDV ORANI DAĞILIMI — DONUT GRAFİK ═══ */}
+            {vatData.length > 0 && (
+              <View style={styles.chartCard}>
+                <Text style={styles.chartTitle}>💰 KDV Oranı Dağılımı</Text>
+                <View style={styles.donutContainer}>
+                  <Svg width={160} height={160} viewBox="0 0 160 160">
+                    {(() => {
+                      const total = vatData.reduce((s, d) => s + d.amount, 0) || 1;
+                      let startAngle = 0;
+                      const cx = 80, cy = 80, r = 60, strokeWidth = 25;
+                      const circumference = 2 * Math.PI * r;
 
-          <View style={[styles.summaryCard, { backgroundColor: "#7C3AED" }]}>
-            <Text style={styles.summaryCardLabel}>Toplam KDV</Text>
-            <Text style={styles.summaryCardValue}>{fmtTL(grandVat)}</Text>
-          </View>
+                      return vatData.map((d, i) => {
+                        const pct = d.amount / total;
+                        const dashLen = circumference * pct;
+                        const dashOffset = circumference * startAngle;
+                        startAngle += pct;
 
-          <View style={[styles.summaryCard, { backgroundColor: "#64748B" }]}>
-            <Text style={styles.summaryCardLabel}>Kayıt Sayısı</Text>
-            <Text style={styles.summaryCardValue}>{expenseCount}</Text>
-          </View>
-        </View>
-
-        {/* ═══════════════════════════════════════════════════════════════
-            2. KATEGORİ DAĞILIMI — Yatay Bar Grafiği
-            ═══════════════════════════════════════════════════════════════ */}
-        {data?.categoryBreakdown?.length > 0 && (
-          <View style={styles.chartCard}>
-            <Text style={styles.chartTitle}>📁 Kategori Dağılımı</Text>
-            {data.categoryBreakdown.map((cat, idx) => {
-              const catInfo = CATEGORIES[cat.name] || CATEGORIES.diğer;
-              const maxAmount = data.categoryBreakdown[0].amount;
-              const barWidth = maxAmount > 0 ? (cat.amount / maxAmount) * (CHART_WIDTH - 100) : 0;
-              const percentage = grandTotal > 0 ? ((cat.amount / grandTotal) * 100).toFixed(1) : 0;
-
-              return (
-                <View key={cat.name} style={styles.barRow}>
-                  <View style={styles.barLabel}>
-                    <Text style={styles.barIcon}>{catInfo.icon}</Text>
-                    <Text style={styles.barLabelText} numberOfLines={1}>{cat.name}</Text>
-                  </View>
-                  <View style={styles.barContainer}>
-                    <View style={[styles.bar, {
-                      width: Math.max(barWidth, 4),
-                      backgroundColor: catInfo.color,
-                    }]} />
-                  </View>
-                  <View style={styles.barValueContainer}>
-                    <Text style={styles.barValue}>{fmtTL(cat.amount)}</Text>
-                    <Text style={styles.barPercent}>%{percentage}</Text>
-                  </View>
+                        return (
+                          <Circle
+                            key={i}
+                            cx={cx} cy={cy} r={r}
+                            fill="none"
+                            stroke={COLORS[i % COLORS.length]}
+                            strokeWidth={strokeWidth}
+                            strokeDasharray={`${dashLen} ${circumference - dashLen}`}
+                            strokeDashoffset={-dashOffset}
+                            transform={`rotate(-90 ${cx} ${cy})`}
+                          />
+                        );
+                      });
+                    })()}
+                    <SvgText x={80} y={76} textAnchor="middle" fontSize={14} fontWeight="bold" fill="#0F172A">
+                      {fmtTL(vatData.reduce((s, d) => s + d.amount, 0))}
+                    </SvgText>
+                    <SvgText x={80} y={94} textAnchor="middle" fontSize={10} fill="#64748B">
+                      Toplam KDV
+                    </SvgText>
+                  </Svg>
                 </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* ═══════════════════════════════════════════════════════════════
-            3. DÖNEM KARŞILAŞTIRMASI
-            ═══════════════════════════════════════════════════════════════ */}
-        {data?.report?.periods && (
-          <View style={styles.chartCard}>
-            <Text style={styles.chartTitle}>📅 Dönem Karşılaştırması</Text>
-            {data.report.periods.map((p, idx) => {
-              const maxPeriodTotal = Math.max(...data.report.periods.map((pp) => pp.totals.total));
-              const barW = maxPeriodTotal > 0 ? (p.totals.total / maxPeriodTotal) * (CHART_WIDTH - 120) : 0;
-              const pLabel = p.period.label.split(" ").slice(0, 2).join(" ");
-
-              return (
-                <View key={idx} style={styles.periodBarRow}>
-                  <Text style={styles.periodBarLabel} numberOfLines={1}>{pLabel}</Text>
-                  <View style={styles.periodBarContainer}>
-                    <View style={[styles.periodBar, {
-                      width: Math.max(barW, 4),
-                      backgroundColor: COLORS[idx % COLORS.length],
-                    }]} />
-                  </View>
-                  <View style={styles.periodBarInfo}>
-                    <Text style={styles.periodBarAmount}>{fmtTL(p.totals.total)}</Text>
-                    <Text style={styles.periodBarCount}>{p.totals.count} kayıt</Text>
-                  </View>
+                {/* Legend */}
+                <View style={styles.legend}>
+                  {vatData.map((d, i) => (
+                    <View key={i} style={styles.legendItem}>
+                      <View style={[styles.legendDot, { backgroundColor: COLORS[i % COLORS.length] }]} />
+                      <Text style={styles.legendText}>%{d.rate} — {fmtTL(d.amount)}</Text>
+                    </View>
+                  ))}
                 </View>
-              );
-            })}
-          </View>
-        )}
+              </View>
+            )}
 
-        {/* ═══════════════════════════════════════════════════════════════
-            4. KDV ORANI DAĞILIMI
-            ═══════════════════════════════════════════════════════════════ */}
-        {data?.vatBreakdown?.length > 0 && (
-          <View style={styles.chartCard}>
-            <Text style={styles.chartTitle}>💰 KDV Oranı Dağılımı</Text>
-            {data.vatBreakdown.map((vat, idx) => {
-              const maxVatAmount = data.vatBreakdown[0].amount;
-              const barW = maxVatAmount > 0 ? (vat.amount / maxVatAmount) * (CHART_WIDTH - 120) : 0;
-
-              return (
-                <View key={vat.rate} style={styles.vatBarRow}>
-                  <View style={styles.vatRateBadge}>
-                    <Text style={styles.vatRateText}>%{vat.rate}</Text>
-                  </View>
-                  <View style={styles.vatBarContainer}>
-                    <View style={[styles.vatBar, {
-                      width: Math.max(barW, 4),
-                      backgroundColor: COLORS[idx % COLORS.length],
-                    }]} />
-                  </View>
-                  <Text style={styles.vatBarAmount}>{fmtTL(vat.amount)}</Text>
+            {/* ═══ DÖNEM KARŞILAŞTIRMASI ═══ */}
+            {report.periods && report.periods.length > 0 && (
+              <View style={styles.chartCard}>
+                <Text style={styles.chartTitle}>📅 Dönem Karşılaştırması</Text>
+                <Svg width={SCREEN_W} height={180} viewBox={`0 0 ${SCREEN_W} 180`}>
+                  {/* Grid lines */}
+                  {[0, 1, 2, 3].map(i => (
+                    <Line key={i} x1={40} y1={20 + i * 45} x2={SCREEN_W - 10} y2={20 + i * 45}
+                      stroke="#E2E8F0" strokeWidth={1} />
+                  ))}
+                  {/* Bars */}
+                  {report.periods.map((p, i) => {
+                    const maxVal = Math.max(...report.periods.map(pe => pe.total_amount), 1);
+                    const barH = (p.total_amount / maxVal) * 130;
+                    const barW = (SCREEN_W - 80) / report.periods.length - 16;
+                    const x = 50 + i * (barW + 16);
+                    const y = 155 - barH;
+                    return (
+                      <G key={i}>
+                        <Rect x={x} y={y} width={barW} height={barH} rx={6} fill={COLORS[i]} opacity={0.9} />
+                        <SvgText x={x + barW / 2} y={y - 6} textAnchor="middle" fontSize={10} fontWeight="bold" fill="#0F172A">
+                          {fmtTL(p.total_amount)}
+                        </SvgText>
+                        <SvgText x={x + barW / 2} y={172} textAnchor="middle" fontSize={9} fill="#64748B">
+                          {p.period_label?.split(" ")[0] || `Dönem ${i + 1}`}
+                        </SvgText>
+                      </G>
+                    );
+                  })}
+                </Svg>
+                {/* Dönem detayları */}
+                <View style={styles.periodDetails}>
+                  {report.periods.map((p, i) => (
+                    <View key={i} style={styles.periodItem}>
+                      <View style={[styles.periodDot, { backgroundColor: COLORS[i] }]} />
+                      <Text style={styles.periodLabel}>{p.period_label}</Text>
+                      <Text style={styles.periodAmount}>{fmtTL(p.total_amount)}</Text>
+                      <Text style={styles.periodCount}>{p.expense_count} kayıt</Text>
+                    </View>
+                  ))}
                 </View>
-              );
-            })}
-          </View>
+              </View>
+            )}
+          </>
         )}
-
-        {/* Boş durum */}
-        {data?.expenses?.length === 0 && (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>📭</Text>
-            <Text style={styles.emptyText}>Bu ay henüz gider yok</Text>
-            <Text style={styles.emptySubtext}>İlk fişinizi çekerek başlayın</Text>
-          </View>
-        )}
-
-        <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F7F9" },
-  scroll: { padding: 16 },
-  title: { fontSize: 26, fontWeight: "bold", color: "#0F172A", marginBottom: 12 },
-
-  // Ay seçici
-  monthSelector: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 20, marginBottom: 16,
-  },
-  arrowBtn: { padding: 8 },
-  arrowText: { fontSize: 20, color: "#0284C7", fontWeight: "bold" },
-  monthLabel: { fontSize: 18, fontWeight: "bold", color: "#0F172A" },
+  container: { flex: 1, backgroundColor: "#0F172A" },
+  scroll: { padding: 20 },
+  title: { fontSize: 22, fontWeight: "bold", color: "#F8FAFC", marginBottom: 16 },
+  emptyText: { color: "#64748B", textAlign: "center", marginTop: 40 },
 
   // Özet kartları
-  summaryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
+  cardRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
   summaryCard: {
-    flex: 1, minWidth: "45%", borderRadius: 14, padding: 16,
+    flex: 1, borderRadius: 14, padding: 16, alignItems: "center",
   },
-  summaryCardLabel: { color: "#E0F2FE", fontSize: 11, fontWeight: "500" },
-  summaryCardValue: { color: "#fff", fontSize: 18, fontWeight: "bold", marginTop: 4 },
-  changeBadge: { fontSize: 12, fontWeight: "600", marginTop: 4 },
+  summaryLabel: { fontSize: 12, fontWeight: "500" },
+  summaryAmount: { fontSize: 20, fontWeight: "bold", marginTop: 4 },
 
   // Grafik kartları
   chartCard: {
-    backgroundColor: "#fff", borderRadius: 14, padding: 16, marginBottom: 16,
-    borderWidth: 1, borderColor: "#E2E8F0",
+    backgroundColor: "#1E293B", borderRadius: 14, padding: 16, marginTop: 12,
+    borderWidth: 1, borderColor: "#334155",
   },
-  chartTitle: { fontSize: 16, fontWeight: "bold", color: "#0F172A", marginBottom: 14 },
+  chartTitle: { fontSize: 16, fontWeight: "bold", color: "#F8FAFC", marginBottom: 14 },
 
-  // Kategori barları
-  barRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  barLabel: { width: 80, flexDirection: "row", alignItems: "center", gap: 4 },
-  barIcon: { fontSize: 14 },
-  barLabelText: { fontSize: 12, color: "#334155", flex: 1 },
-  barContainer: { flex: 1, height: BAR_HEIGHT, backgroundColor: "#F1F5F9", borderRadius: 6, overflow: "hidden" },
-  bar: { height: "100%", borderRadius: 6 },
-  barValueContainer: { width: 100, alignItems: "flex-end", marginLeft: 8 },
-  barValue: { fontSize: 12, fontWeight: "600", color: "#0F172A" },
-  barPercent: { fontSize: 10, color: "#64748B" },
+  // Bar grafiği
+  barRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  barLabel: { width: 100, fontSize: 12, color: "#CBD5E1" },
+  barContainer: { flex: 1, height: 18, backgroundColor: "#0F172A", borderRadius: 9, overflow: "hidden", marginHorizontal: 8 },
+  bar: { height: "100%", borderRadius: 9, minWidth: 4 },
+  barValue: { fontSize: 11, color: "#F8FAFC", fontWeight: "600", width: 70, textAlign: "right" },
+  barPct: { fontSize: 10, color: "#64748B", width: 38, textAlign: "right" },
 
-  // Dönem barları
-  periodBarRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-  periodBarLabel: { width: 65, fontSize: 12, color: "#334155", fontWeight: "500" },
-  periodBarContainer: { flex: 1, height: 32, backgroundColor: "#F1F5F9", borderRadius: 8, overflow: "hidden" },
-  periodBar: { height: "100%", borderRadius: 8 },
-  periodBarInfo: { width: 95, alignItems: "flex-end", marginLeft: 8 },
-  periodBarAmount: { fontSize: 13, fontWeight: "600", color: "#0F172A" },
-  periodBarCount: { fontSize: 10, color: "#64748B" },
+  // Donut
+  donutContainer: { alignItems: "center", marginVertical: 8 },
+  legend: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 12 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendText: { fontSize: 12, color: "#CBD5E1" },
 
-  // KDV barları
-  vatBarRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  vatRateBadge: {
-    backgroundColor: "#0F172A", borderRadius: 6, paddingVertical: 4, paddingHorizontal: 8,
-  },
-  vatRateText: { color: "#fff", fontSize: 12, fontWeight: "bold" },
-  vatBarContainer: { flex: 1, height: 24, backgroundColor: "#F1F5F9", borderRadius: 6, overflow: "hidden", marginHorizontal: 8 },
-  vatBar: { height: "100%", borderRadius: 6 },
-  vatBarAmount: { fontSize: 12, fontWeight: "600", color: "#0F172A", width: 80, textAlign: "right" },
-
-  // Boş durum
-  emptyCard: {
-    backgroundColor: "#fff", borderRadius: 14, padding: 40, alignItems: "center",
-    borderWidth: 1, borderColor: "#E2E8F0",
-  },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 16, fontWeight: "600", color: "#334155" },
-  emptySubtext: { fontSize: 13, color: "#94A3B8", marginTop: 4 },
+  // Dönem karşılaştırması
+  periodDetails: { marginTop: 12, gap: 6 },
+  periodItem: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6, borderTopWidth: 1, borderTopColor: "#334155" },
+  periodDot: { width: 10, height: 10, borderRadius: 5 },
+  periodLabel: { flex: 1, fontSize: 13, color: "#CBD5E1" },
+  periodAmount: { fontSize: 14, fontWeight: "600", color: "#F8FAFC" },
+  periodCount: { fontSize: 11, color: "#64748B", width: 50, textAlign: "right" },
 });

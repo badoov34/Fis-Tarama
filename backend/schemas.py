@@ -142,10 +142,12 @@ class OCRResult(BaseModel):
 
 # ============================================================================
 # Kategori
-# ============================================================================
+
 
 class CategoryCreate(BaseModel):
     name: str
+    icon: Optional[str] = "📁"
+
 
 class CategoryOut(BaseModel):
     id: str

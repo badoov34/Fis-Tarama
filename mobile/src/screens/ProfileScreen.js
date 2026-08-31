@@ -11,7 +11,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as SecureStore from "expo-secure-store";
 import http, { API_BASE } from "../lib/api";
 
-export default function ProfileScreen({ onLogout }) {
+export default function ProfileScreen({ onLogout, navigation }) {
   const [user, setUser] = useState(null);
   const [name, setName] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -228,6 +228,14 @@ export default function ProfileScreen({ onLogout }) {
           <InfoRow label="Kullanıcı ID" value={user?.id?.slice(0, 8) || "-"} />
         </View>
 
+        {/* Kategoriler */}
+        <TouchableOpacity
+          style={styles.menuBtn}
+          onPress={() => navigation?.navigate("Categories")}
+        >
+          <Text style={styles.menuBtnText}>🏷️ Kategorileri Yönet</Text>
+        </TouchableOpacity>
+
         {/* Çıkış */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Text style={styles.logoutBtnText}>🚪 Çıkış Yap</Text>
@@ -295,6 +303,12 @@ const styles = StyleSheet.create({
   },
   infoLabel: { color: "#64748B", fontSize: 13 },
   infoValue: { color: "#0F172A", fontSize: 13, fontWeight: "500" },
+
+  menuBtn: {
+    backgroundColor: "#EFF6FF", borderRadius: 12, padding: 16,
+    alignItems: "center", borderWidth: 1, borderColor: "#BFDBFE", marginBottom: 12,
+  },
+  menuBtnText: { color: "#0284C7", fontWeight: "600", fontSize: 15 },
 
   logoutBtn: {
     backgroundColor: "#FEF2F2", borderRadius: 12, padding: 16,

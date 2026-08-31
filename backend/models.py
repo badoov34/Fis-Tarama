@@ -74,10 +74,17 @@ class Expense(Base):
 
 
 class Category(Base):
-    """Gider kategorileri."""
+    """Gider kategorileri — sistem veya kullanıcıya özel."""
     __tablename__ = "categories"
 
     id = Column(String(36), primary_key=True, default=new_id)
-    name = Column(String(100), unique=True, nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=True)  # None = sistem kategorisi
+    name = Column(String(100), nullable=False)
+    icon = Column(String(10), default="📁")  # Kategori ikonu
     is_default = Column(Boolean, default=False)  # Sistem kategorisi mi?
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        # Aynı kullanıcı aynı isimde iki kategori oluşturamaz
+        # Sistem kategorileri (user_id=NULL) benzersiz olmalı
+    )

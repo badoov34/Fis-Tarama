@@ -63,26 +63,35 @@ async def lifespan(app: FastAPI):
     init_db()
     logger.info("✅ Veritabanı tabloları hazır")
 
-    # Migrasyon: vkn sütunu ekle (yoksa)
+    # Migrasyonlar: yeni sütunlar ekle (yoksa)
+    from sqlalchemy import text as sql_text
+    db = SessionLocal()
     try:
-        db = SessionLocal()
-        db.execute(__import__('sqlalchemy').text(
-            "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS vkn VARCHAR(20) DEFAULT ''"
-        ))
+        migrations = [
+            "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS vkn VARCHAR(20) DEFAULT ''",
+            "ALTER TABLE categories ADD COLUMN IF NOT EXISTS user_id VARCHAR(36) DEFAULT NULL",
+            "ALTER TABLE categories ADD COLUMN IF NOT EXISTS icon VARCHAR(10) DEFAULT '📁'",
+        ]
+        for m in migrations:
+            try:
+                db.execute(sql_text(m))
+            except Exception:
+                pass  # Sütun zaten var
         db.commit()
-        db.close()
-        logger.info("✅ vkn sütunu migrasyonu tamamlandı")
+        logger.info("✅ Veritabanı migrasyonları tamamlandı")
     except Exception as e:
-        logger.debug(f"vkn migrasyonu atlandı (muhtemelen zaten var): {e}")
+        logger.warning(f"Migrasyon hatası: {e}")
+    finally:
+        db.close()
 
     # Varsayılan kategorileri ekle (yoksa)
     db = SessionLocal()
     try:
         defaults = get_default_categories()
-        for cat_name in defaults:
-            existing = db.query(Category).filter(Category.name == cat_name).first()
+        for cat_data in defaults:
+            existing = db.query(Category).filter(Category.name == cat_data["name"]).first()
             if not existing:
-                cat = Category(name=cat_name, is_default=True)
+                cat = Category(name=cat_data["name"], icon=cat_data["icon"], is_default=True)
                 db.add(cat)
         db.commit()
         logger.info(f"✅ {len(defaults)} varsayılan kategori hazır")
@@ -165,10 +174,12 @@ app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads"
 from routes.auth import router as auth_router
 from routes.expenses import router as expenses_router
 from routes.reports import router as reports_router
+from routes.categories import router as categories_router
 
 app.include_router(auth_router)
 app.include_router(expenses_router)
 app.include_router(reports_router)
+app.include_router(categories_router)
 
 
 @app.get("/")

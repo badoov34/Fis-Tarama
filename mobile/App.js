@@ -24,6 +24,7 @@ import ExpenseDetailScreen from "./src/screens/ExpenseDetailScreen";
 import ExpenseEditScreen from "./src/screens/ExpenseEditScreen";
 import TrashScreen from "./src/screens/TrashScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
+import CategoriesScreen from "./src/screens/CategoriesScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -113,6 +114,11 @@ function AppStack({ onLogout }) {
         name="Trash"
         component={TrashScreen}
         options={{ title: "Çöp Kutusu", headerTintColor: activeColor }}
+      />
+      <Stack.Screen
+        name="Categories"
+        component={CategoriesScreen}
+        options={{ title: "Kategoriler", headerTintColor: activeColor }}
       />
     </Stack.Navigator>
   );

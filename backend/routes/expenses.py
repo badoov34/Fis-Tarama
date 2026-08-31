@@ -12,7 +12,7 @@ from sqlalchemy import extract
 
 from database import get_db
 from models import Expense, Category
-from schemas import ExpenseCreate, ExpenseUpdate, ExpenseOut, ExpenseFromScan, OCRResult, CategoryCreate, CategoryOut
+from schemas import ExpenseCreate, ExpenseUpdate, ExpenseOut, ExpenseFromScan, OCRResult
 from routes.auth import get_current_user
 from models import User
 from config import settings
@@ -161,10 +161,15 @@ def list_expenses(
     year: Optional[int] = None,
     month: Optional[int] = None,
     category: Optional[str] = None,
+    search: Optional[str] = None,
+    min_amount: Optional[float] = None,
+    max_amount: Optional[float] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
-    """Giderleri listele — filtreleme destekli. Silinmişler hariç."""
+    """Giderleri listele — gelişmiş filtreleme destekli. Silinmişler hariç."""
     user = get_current_user(authorization, db)
 
     query = db.query(Expense).filter(
@@ -179,6 +184,34 @@ def list_expenses(
         )
     if category:
         query = query.filter(Expense.category == category)
+
+    # Gelişmiş filtreler
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            (Expense.vendor_name.ilike(search_term)) |
+            (Expense.description.ilike(search_term)) |
+            (Expense.receipt_number.ilike(search_term)) |
+            (Expense.vkn.ilike(search_term))
+        )
+    if min_amount is not None:
+        query = query.filter(Expense.total_amount >= min_amount)
+    if max_amount is not None:
+        query = query.filter(Expense.total_amount <= max_amount)
+    if date_from:
+        try:
+            from datetime import date as date_type
+            df = date_type.fromisoformat(date_from)
+            query = query.filter(Expense.receipt_date >= df)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            from datetime import date as date_type
+            dt = date_type.fromisoformat(date_to)
+            query = query.filter(Expense.receipt_date <= dt)
+        except ValueError:
+            pass
 
     expenses = query.order_by(Expense.receipt_date.desc(), Expense.created_at.desc()).all()
     return [expense_to_dict(e) for e in expenses]
@@ -397,6 +430,64 @@ def delete_expense(
 
 
 # ============================================================================
+# TOPLU İŞLEMLER
+# ============================================================================
+
+@router.post("/bulk/delete")
+def bulk_delete_expenses(
+    data: dict,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    """Birden fazla gideri toplu olarak soft delete."""
+    user = get_current_user(authorization, db)
+    ids = data.get("ids", [])
+    if not ids:
+        raise HTTPException(status_code=400, detail="Silinecek gider seçilmedi")
+
+    count = 0
+    for eid in ids:
+        exp = db.query(Expense).filter(
+            Expense.id == eid, Expense.user_id == user.id, Expense.is_deleted == False
+        ).first()
+        if exp:
+            exp.is_deleted = True
+            exp.deleted_at = datetime.utcnow()
+            exp.updated_at = datetime.utcnow()
+            count += 1
+
+    db.commit()
+    return {"ok": True, "message": f"{count} gider çöp kutusuna taşındı", "count": count}
+
+
+@router.post("/bulk/category")
+def bulk_update_category(
+    data: dict,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    """Birden fazla giderin kategorisini toplu olarak değiştir."""
+    user = get_current_user(authorization, db)
+    ids = data.get("ids", [])
+    new_category = data.get("category", "")
+    if not ids or not new_category:
+        raise HTTPException(status_code=400, detail="ID ve kategori gerekli")
+
+    count = 0
+    for eid in ids:
+        exp = db.query(Expense).filter(
+            Expense.id == eid, Expense.user_id == user.id
+        ).first()
+        if exp:
+            exp.category = new_category
+            exp.updated_at = datetime.utcnow()
+            count += 1
+
+    db.commit()
+    return {"ok": True, "message": f"{count} giderin kategorisi güncellendi", "count": count}
+
+
+# ============================================================================
 # ÇÖP KUTUSU
 # ============================================================================
 
@@ -463,76 +554,3 @@ def permanent_delete_expense(
     return {"ok": True, "message": "Gider kalıcı olarak silindi"}
 
 
-# ============================================================================
-# KATEGORİLER
-# ============================================================================
-
-@router.get("/categories/list")
-def list_categories(
-    authorization: Optional[str] = Header(None),
-    db: Session = Depends(get_db),
-):
-    """Gider kategorilerini listele."""
-    user = get_current_user(authorization, db)
-
-    defaults = get_default_categories()
-    custom = db.query(Category).filter(Category.is_default == False).all()
-
-    return {
-        "defaults": defaults,
-        "custom": [c.name for c in custom],
-        "all": defaults + [c.name for c in custom],
-    }
-
-
-@router.post("/categories")
-def create_category(
-    data: CategoryCreate,
-    authorization: Optional[str] = Header(None),
-    db: Session = Depends(get_db),
-):
-    """Yeni gider kategorisi oluştur."""
-    user = get_current_user(authorization, db)
-    name = data.name.lower().strip()
-
-    if not name:
-        raise HTTPException(status_code=400, detail="Kategori adı boş olamaz")
-
-    # Varsayılan kategorilerden biri mi?
-    defaults = get_default_categories()
-    if name in defaults:
-        raise HTTPException(status_code=400, detail="Bu zaten bir sistem kategorisi")
-
-    # Mevcut mu?
-    existing = db.query(Category).filter(Category.name == name).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Bu kategori zaten var")
-
-    cat = Category(name=name, is_default=False)
-    db.add(cat)
-    db.commit()
-    return {"ok": True, "name": name}
-
-
-@router.delete("/categories/{name}")
-def delete_category(
-    name: str,
-    authorization: Optional[str] = Header(None),
-    db: Session = Depends(get_db),
-):
-    """Gider kategorisini sil."""
-    user = get_current_user(authorization, db)
-    name = name.lower().strip()
-
-    # Varsayılan kategoriler silinemez
-    defaults = get_default_categories()
-    if name in defaults:
-        raise HTTPException(status_code=400, detail="Sistem kategorileri silinemez")
-
-    cat = db.query(Category).filter(Category.name == name).first()
-    if not cat:
-        raise HTTPException(status_code=404, detail="Kategori bulunamadı")
-
-    db.delete(cat)
-    db.commit()
-    return {"ok": True}

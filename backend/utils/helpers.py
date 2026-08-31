@@ -147,23 +147,23 @@ def format_turkish_lira(amount: float) -> str:
     return f"{sign}{int_str},{decimal_part:02d}₺"
 
 
-def get_default_categories() -> List[str]:
-    """Varsayılan gider kategorilerini döndür."""
+def get_default_categories() -> List[Dict]:
+    """Varsayılan gider kategorilerini döndür (ikonlu)."""
     return [
-        "market",
-        "akaryakıt",
-        "yemek",
-        "ulaşım",
-        "kira",
-        "personel",
-        "malzeme",
-        "faturalar",
-        "telefon",
-        "internet",
-        "bakım",
-        "temizlik",
-        "reklam",
-        "sigorta",
-        "vergi",
-        "diğer",
+        {"name": "market", "icon": "🛒"},
+        {"name": "akaryakıt", "icon": "⛽"},
+        {"name": "yemek", "icon": "🍽️"},
+        {"name": "ulaşım", "icon": "🚗"},
+        {"name": "kira", "icon": "🏢"},
+        {"name": "personel", "icon": "👥"},
+        {"name": "malzeme", "icon": "📦"},
+        {"name": "faturalar", "icon": "💡"},
+        {"name": "telefon", "icon": "📱"},
+        {"name": "internet", "icon": "🌐"},
+        {"name": "bakım", "icon": "🔧"},
+        {"name": "temizlik", "icon": "🧹"},
+        {"name": "reklam", "icon": "📢"},
+        {"name": "sigorta", "icon": "🛡️"},
+        {"name": "vergi", "icon": "🏛️"},
+        {"name": "diğer", "icon": "📁"},
     ]
