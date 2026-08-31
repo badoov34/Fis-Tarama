@@ -157,6 +157,7 @@ def scan_with_tesseract(image_path: str) -> Optional[Dict[str, Any]]:
             "vat_amount": ocr_result.vat_amount,
             "net_amount": ocr_result.net_amount,
             "vat_items": vat_items_list,
+            "vkn": ocr_result.vkn or "",
             "receipt_date": ocr_result.receipt_date.isoformat() if ocr_result.receipt_date else None,
             "receipt_number": ocr_result.receipt_number or "",
             "category": ocr_result.category or "diger",
@@ -230,6 +231,7 @@ def scan_receipt(image_path: str) -> OCRResult:
             vendor_name=gemini_result.get("vendor_name", ""),
             receipt_date=receipt_date,
             receipt_number=gemini_result.get("receipt_number", ""),
+            vkn=gemini_result.get("vkn", ""),
             category=category,
             confidence=95.0,  # Gemini güvenilirliği yüksek
             raw_text=f"[Gemini OCR] {gemini_result.get('vendor_name', '')} {gemini_result.get('total_amount', '')} {gemini_result.get('vat_amount', '')} KDV:{gemini_result.get('vat_rate', '')}%",

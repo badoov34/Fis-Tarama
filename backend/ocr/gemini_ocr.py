@@ -70,6 +70,7 @@ Bu bir Türk fişi/makbuzudur/gidererekonudur. Lütfen aşağıdaki bilgileri JS
   ],
   "receipt_date": "Tarih (YYYY-MM-DD formatında, örneğin 2026-08-26)",
   "receipt_number": "Fiş/fatura numarası (varsa, yoksa boş string)",
+  "vkn": "Vergi Kimlik Numarası (VKN) veya T.C. Kimlik Numarası (TCKN). Fişin üst kısmında 'Vergi No:', 'VKN:', 'V.D.', 'V.D V.NO:', 'Bağlık Vergi Dairesi VKN:' gibi ifadelerin yanındaki 10 veya 11 haneli sayı. Bulunamıyorsa boş string.",
   "category": "Gider kategorisi"
 }
 
