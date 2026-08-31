@@ -44,6 +44,7 @@ class ExpenseCreate(BaseModel):
     vendor_name: Optional[str] = ""
     receipt_date: Optional[date] = None
     receipt_number: Optional[str] = ""
+    vkn: Optional[str] = ""  # Vergi Kimlik Numarası
     category: Optional[str] = "diger"
     description: Optional[str] = ""
     is_manually_edited: Optional[bool] = False
@@ -66,6 +67,7 @@ class ExpenseUpdate(BaseModel):
     vendor_name: Optional[str] = None
     receipt_date: Optional[date] = None
     receipt_number: Optional[str] = None
+    vkn: Optional[str] = None  # Vergi Kimlik Numarası
     category: Optional[str] = None
     description: Optional[str] = None
     is_manually_edited: Optional[bool] = None
@@ -82,6 +84,7 @@ class ExpenseFromScan(BaseModel):
     vendor_name: Optional[str] = ""
     receipt_date: Optional[str] = None  # ISO format: YYYY-MM-DD
     receipt_number: Optional[str] = ""
+    vkn: Optional[str] = ""  # Vergi Kimlik Numarası
     category: Optional[str] = "diger"
     description: Optional[str] = ""
     is_manually_edited: Optional[bool] = False
@@ -97,6 +100,7 @@ class ExpenseOut(BaseModel):
     vendor_name: str
     receipt_date: Optional[date]
     receipt_number: str
+    vkn: str = ""  # Vergi Kimlik Numarası
     category: str
     description: str
     period_start: Optional[date]
@@ -129,6 +133,7 @@ class OCRResult(BaseModel):
     vendor_name: Optional[str] = ""
     receipt_date: Optional[date] = None
     receipt_number: Optional[str] = ""
+    vkn: Optional[str] = ""  # Vergi Kimlik Numarası / TCKN
     category: Optional[str] = None  # OCR kategori önerisi
     confidence: Optional[float] = None
     raw_text: str = ""

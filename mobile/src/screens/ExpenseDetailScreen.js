@@ -144,8 +144,9 @@ export default function ExpenseDetailScreen({ route, navigation }) {
         <View style={styles.infoCard}>
           <InfoRow label="Tarih" value={fmtDate(expense.receipt_date)} />
           <InfoRow label="Fiş No" value={expense.receipt_number || "-"} />
+          {expense.vkn ? <InfoRow label="VKN / TCKN" value={expense.vkn} /> : null}
           <InfoRow label="Kategori" value={expense.category || "diğer"} />
-          <InfoRow label="KDV Güven" value={expense.ocr_confidence ? `%${Math.round(expense.ocr_confidence)}` : "-"} />
+          <InfoRow label="OCR Güvenilirlik" value={expense.ocr_confidence ? `%${Math.round(expense.ocr_confidence)}` : "-"} />
           <InfoRow label="Manuel Düzeltme" value={expense.is_manually_edited ? "Evet" : "Hayır"} />
           <InfoRow label="Kayıt Tarihi" value={fmtDate(expense.created_at)} />
         </View>

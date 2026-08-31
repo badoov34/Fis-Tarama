@@ -129,6 +129,7 @@ export default function ScanScreen({ navigation }) {
   // Genel bilgiler
   const [vendorName, setVendorName] = useState("");
   const [receiptNumber, setReceiptNumber] = useState("");
+  const [vkn, setVkn] = useState("");
   const [receiptDate, setReceiptDate] = useState("");
   const [category, setCategory] = useState("diğer");
   const [description, setDescription] = useState("");
@@ -287,6 +288,7 @@ export default function ScanScreen({ navigation }) {
       // ─── İş yeri, tarih, fiş no ───
       setVendorName(ocr.vendor_name || "");
       setReceiptNumber(ocr.receipt_number || "");
+      setVkn(ocr.vkn || "");
       setReceiptDate(ocr.receipt_date || "");
 
       // ─── Kategori otomatik seçim ───
@@ -348,6 +350,7 @@ export default function ScanScreen({ navigation }) {
       vat_amount: parseFloat(getTotalVat()) || null,
       vendor_name: vendorName,
       receipt_number: receiptNumber,
+      vkn: vkn || "",
       receipt_date: receiptDate || undefined,
       category,
       description,

@@ -116,6 +116,7 @@ export default function ManualAddScreen({ navigation }) {
   // Genel bilgiler
   const [vendorName, setVendorName] = useState("");
   const [receiptNumber, setReceiptNumber] = useState("");
+  const [vkn, setVkn] = useState("");
   const [receiptDate, setReceiptDate] = useState(
     new Date().toISOString().slice(0, 10)
   );
@@ -166,6 +167,7 @@ export default function ManualAddScreen({ navigation }) {
         vat_amount: parseFloat(getTotalVat()) || null,
         vendor_name: vendorName,
         receipt_number: receiptNumber,
+        vkn: vkn || "",
         receipt_date: receiptDate || undefined,
         category,
         description,
@@ -213,6 +215,16 @@ export default function ManualAddScreen({ navigation }) {
           value={receiptNumber}
           onChangeText={setReceiptNumber}
           placeholder="Örn: YES2026000002294"
+        />
+
+        {/* VKN / TCKN */}
+        <Text style={styles.label}>VKN / TCKN (Opsiyonel)</Text>
+        <TextInput
+          style={styles.input}
+          value={vkn}
+          onChangeText={setVkn}
+          placeholder="Vergi veya TC kimlik numarası"
+          keyboardType="numeric"
         />
 
         {/* Tarih */}

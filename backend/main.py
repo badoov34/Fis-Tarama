@@ -63,6 +63,18 @@ async def lifespan(app: FastAPI):
     init_db()
     logger.info("✅ Veritabanı tabloları hazır")
 
+    # Migrasyon: vkn sütunu ekle (yoksa)
+    try:
+        db = SessionLocal()
+        db.execute(__import__('sqlalchemy').text(
+            "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS vkn VARCHAR(20) DEFAULT ''"
+        ))
+        db.commit()
+        db.close()
+        logger.info("✅ vkn sütunu migrasyonu tamamlandı")
+    except Exception as e:
+        logger.debug(f"vkn migrasyonu atlandı (muhtemelen zaten var): {e}")
+
     # Varsayılan kategorileri ekle (yoksa)
     db = SessionLocal()
     try:

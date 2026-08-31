@@ -121,6 +121,7 @@ export default function ExpenseEditScreen({ route, navigation }) {
   // Genel bilgiler
   const [vendorName, setVendorName] = useState("");
   const [receiptNumber, setReceiptNumber] = useState("");
+  const [vkn, setVkn] = useState("");
   const [receiptDate, setReceiptDate] = useState("");
   const [category, setCategory] = useState("diğer");
   const [description, setDescription] = useState("");
@@ -137,6 +138,7 @@ export default function ExpenseEditScreen({ route, navigation }) {
 
       setVendorName(exp.vendor_name || "");
       setReceiptNumber(exp.receipt_number || "");
+      setVkn(exp.vkn || "");
       setReceiptDate(exp.receipt_date || "");
       setCategory(exp.category || "diğer");
       setDescription(exp.description || "");
@@ -215,6 +217,7 @@ export default function ExpenseEditScreen({ route, navigation }) {
         vat_amount: parseFloat(getTotalVat()) || null,
         vendor_name: vendorName,
         receipt_number: receiptNumber,
+        vkn: vkn || "",
         receipt_date: receiptDate || null,
         category,
         description,
@@ -273,6 +276,16 @@ export default function ExpenseEditScreen({ route, navigation }) {
           value={receiptNumber}
           onChangeText={setReceiptNumber}
           placeholder="Fiş numarası"
+        />
+
+        {/* VKN / TCKN */}
+        <Text style={styles.label}>VKN / TCKN</Text>
+        <TextInput
+          style={styles.input}
+          value={vkn}
+          onChangeText={setVkn}
+          placeholder="Vergi veya TC kimlik numarası"
+          keyboardType="numeric"
         />
 
         {/* Tarih */}

@@ -389,6 +389,31 @@ def extract_receipt_number(text: str) -> str:
     return ""
 
 
+def extract_vkn(text: str) -> str:
+    """OCR metninden VKN (Vergi Kimlik Numarası) veya TCKN çıkar.
+
+    Türkiye'de:
+    - Şirketler: 10 haneli VKN
+    - Şahıslar: 11 haneli TCKN
+    Fişlerde genellikle "Vergi No:", "VKN:", "T.C. No:" olarak geçer.
+    """
+    patterns = [
+        # VKN patterns (10 haneli)
+        r"VERG[İI]\s*N[OÖ]\s*:?\s*(\d{10})",
+        r"VKN\s*:?\s*(\d{10})",
+        r"VERG[İI]\s*K[İI]ML[İI]K\s*N[OÖ]\s*:?\s*(\d{10})",
+        # TCKN patterns (11 haneli)
+        r"T\.?\s*C\.?\s*N[OÖ]\s*:?\s*(\d{11})",
+        r"T.C\.?\s*:\s*(\d{11})",
+        r"KİMLİK\s*N[OÖ]\s*:?\s*(\d{11})",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            return match.group(1)
+    return ""
+
+
 def extract_category(text: str, vendor_name: str = "") -> Optional[str]:
     """OCR metninden kategori öner."""
     text_lower = text.lower()
@@ -589,6 +614,9 @@ def process_ocr_text(text: str) -> OCRResult:
     # Adım 4: Fiş numarasını çıkar
     receipt_number = extract_receipt_number(text)
     
+    # Adım 4.5: VKN/TCKN çıkar
+    vkn = extract_vkn(text)
+    
     # Adım 5: KDV döküm tablosunu ara
     vat_items_data = extract_vat_breakdown_table(text)
     
@@ -644,6 +672,7 @@ def process_ocr_text(text: str) -> OCRResult:
         vendor_name=vendor or "",
         receipt_date=receipt_date,
         receipt_number=receipt_number,
+        vkn=vkn,
         category=category,
         confidence=confidence,
         raw_text=text,

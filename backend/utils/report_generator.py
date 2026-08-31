@@ -446,7 +446,8 @@ def generate_excel_report(
     # ====================================================================
     # HER DÖNEM İÇİN AYRI SAYFA (detay)
     # ====================================================================
-    detail_headers = ["Tarih", "İş Yeri", "Açıklama", "KDV%", "Matrah (₺)", "KDV (₺)", "Toplam (₺)"]
+    detail_headers = ["Tarih", "İş Yeri", "Fiş No / VKN", "Tür", "KDV%", "Matrah (₺)", "KDV (₺)", "Toplam (₺)"]
+    DETAIL_COL_COUNT = len(detail_headers)
 
     for p_idx, period_data in enumerate(periods_data):
         period = period_data["period"]
@@ -455,7 +456,8 @@ def generate_excel_report(
         ws_detail = wb.create_sheet(title=period["label"][:31])
 
         # Başlık
-        ws_detail.merge_cells("A1:G1")
+        last_col_letter = get_column_letter(DETAIL_COL_COUNT)
+        ws_detail.merge_cells(f"A1:{last_col_letter}1")
         ws_detail["A1"] = f"{company_part}Dönem: {period['label']}"
         ws_detail["A1"].font = TITLE_FONT
         ws_detail["A1"].alignment = Alignment(horizontal="center")
@@ -477,19 +479,36 @@ def generate_excel_report(
         for exp in expenses:
             ws_detail.cell(row=detail_row, column=1, value=exp.get("receipt_date", "")).font = NORMAL_FONT
             ws_detail.cell(row=detail_row, column=2, value=exp.get("vendor_name", "")).font = NORMAL_FONT
-            ws_detail.cell(row=detail_row, column=3, value=exp.get("description", "")).font = NORMAL_FONT
+
+            # Fiş No / VKN sütunu
+            receipt_no = exp.get("receipt_number", "")
+            vkn = exp.get("vkn", "")
+            fis_vkn_text = receipt_no or vkn or ""
+            ws_detail.cell(row=detail_row, column=3, value=fis_vkn_text).font = NORMAL_FONT
+
+            # Gider türü (kategori)
+            category_map = {
+                "market": "Market", "akaryakıt": "Akaryakıt", "yemek": "Yemek",
+                "ulaşım": "Ulaşım", "konaklama": "Konaklama", "ofis": "Ofis",
+                "reklam": "Reklam", "personel": "Personel", "vergi": "Vergi",
+                "sigorta": "Sigorta", "sağlık": "Sağlık", "eğitim": "Eğitim",
+                "telekomünikasyon": "Telekomünikasyon", "kira": "Kira",
+                "enerji": "Enerji", "diger": "Diğer",
+            }
+            cat = exp.get("category", "diger")
+            ws_detail.cell(row=detail_row, column=4, value=category_map.get(cat, cat)).font = NORMAL_FONT
 
             # KDV hücresi — çoklu KDV dökümü
             vat_text = _format_vat_cell(exp)
-            ws_detail.cell(row=detail_row, column=4, value=vat_text).font = NORMAL_FONT
+            ws_detail.cell(row=detail_row, column=5, value=vat_text).font = NORMAL_FONT
 
-            ws_detail.cell(row=detail_row, column=5, value=exp.get("net_amount") or 0).font = NORMAL_FONT
-            ws_detail.cell(row=detail_row, column=6, value=exp.get("vat_amount") or 0).font = NORMAL_FONT
-            ws_detail.cell(row=detail_row, column=7, value=exp.get("total_amount", 0)).font = NORMAL_FONT
+            ws_detail.cell(row=detail_row, column=6, value=exp.get("net_amount") or 0).font = NORMAL_FONT
+            ws_detail.cell(row=detail_row, column=7, value=exp.get("vat_amount") or 0).font = NORMAL_FONT
+            ws_detail.cell(row=detail_row, column=8, value=exp.get("total_amount", 0)).font = NORMAL_FONT
 
-            for c in range(1, 8):
+            for c in range(1, DETAIL_COL_COUNT + 1):
                 ws_detail.cell(row=detail_row, column=c).border = THIN_BORDER
-                if c >= 5:
+                if c >= 6:
                     ws_detail.cell(row=detail_row, column=c).number_format = '#,##0.00 ₺'
 
             period_total += exp.get("total_amount", 0)
@@ -666,12 +685,23 @@ def generate_pdf_report(
         table_data = [[
             Paragraph("Tarih", bold_style),
             Paragraph("İş Yeri", bold_style),
-            Paragraph("Açıklama", bold_style),
+            Paragraph("Fiş No / VKN", bold_style),
+            Paragraph("Tür", bold_style),
             Paragraph("KDV%", bold_style),
             Paragraph("Matrah", bold_style),
             Paragraph("KDV", bold_style),
             Paragraph("Toplam", bold_style),
         ]]
+
+        # Kategori haritası
+        category_map_pdf = {
+            "market": "Market", "akaryakıt": "Akaryakıt", "yemek": "Yemek",
+            "ulaşım": "Ulaşım", "konaklama": "Konaklama", "ofis": "Ofis",
+            "reklam": "Reklam", "personel": "Personel", "vergi": "Vergi",
+            "sigorta": "Sigorta", "sağlık": "Sağlık", "eğitim": "Eğitim",
+            "telekomünikasyon": "Telekomünikasyon", "kira": "Kira",
+            "enerji": "Enerji", "diger": "Diğer",
+        }
 
         for exp in expenses:
             # KDV hücresi — çoklu ise detay göster
@@ -686,10 +716,20 @@ def generate_pdf_report(
             else:
                 vat_cell = Paragraph(vat_text, normal_style)
 
+            # Fiş No / VKN hücresi
+            receipt_no = exp.get("receipt_number", "")
+            vkn = exp.get("vkn", "")
+            fis_vkn_text = receipt_no or vkn or ""
+
+            # Gider türü
+            cat = exp.get("category", "diger")
+            category_text = category_map_pdf.get(cat, cat)
+
             table_data.append([
                 Paragraph(str(exp.get("receipt_date", "")), normal_style),
                 Paragraph(str(exp.get("vendor_name", "")), normal_style),
-                Paragraph(str(exp.get("description", "")[:40]), normal_style),
+                Paragraph(str(fis_vkn_text), normal_style),
+                Paragraph(str(category_text), normal_style),
                 vat_cell,
                 Paragraph(format_turkish_lira(exp.get("net_amount") or 0), normal_style),
                 Paragraph(format_turkish_lira(exp.get("vat_amount") or 0), normal_style),
@@ -702,13 +742,14 @@ def generate_pdf_report(
             Paragraph("<b>TOPLAM</b>", bold_style),
             "",
             "",
+            "",
             Paragraph(format_turkish_lira(totals["net"]), bold_style),
             Paragraph(format_turkish_lira(totals["vat"]), bold_style),
             Paragraph(format_turkish_lira(totals["total"]), bold_style),
         ])
 
-        # Tabloyu oluştur — dikey A4 için daraltılmış sütunlar
-        col_widths = [1.8*cm, 3.5*cm, 4*cm, 2.2*cm, 2.5*cm, 2*cm, 2.5*cm]
+        # Tabloyu oluştur — dikey A4 için 8 sütun sığacak şekilde
+        col_widths = [1.6*cm, 2.8*cm, 2.5*cm, 1.8*cm, 1.5*cm, 2.2*cm, 1.8*cm, 2.3*cm]
         table = Table(table_data, colWidths=col_widths, repeatRows=1)
 
         # Stil

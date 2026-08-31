@@ -43,6 +43,7 @@ class Expense(Base):
     vendor_name = Column(String(255), default="")       # İş yeri adı
     receipt_date = Column(Date, nullable=True)          # Fiş tarihi
     receipt_number = Column(String(100), default="")    # Fiş/fatura numarası
+    vkn = Column(String(20), default="")               # Vergi Kimlik Numarası / TCKN
 
     # Kategorilendirme
     category = Column(String(100), default="diger")     # Kategori

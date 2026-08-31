@@ -50,6 +50,8 @@ def expense_to_dict(exp: Expense) -> dict:
         "vat_amount": exp.vat_amount,
         "vendor_name": exp.vendor_name or "",
         "receipt_date": exp.receipt_date.isoformat() if exp.receipt_date else None,
+        "receipt_number": exp.receipt_number or "",
+        "vkn": exp.vkn or "",
         "description": exp.description or "",
         "category": exp.category or "diger",
         "vat_items": vat_items,
