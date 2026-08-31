@@ -459,6 +459,16 @@ export default function ScanScreen({ navigation }) {
                   placeholder="Fiş numarası"
                 />
 
+                {/* VKN / TCKN */}
+                <Text style={styles.label}>VKN / TCKN</Text>
+                <TextInput
+                  style={styles.input}
+                  value={vkn}
+                  onChangeText={setVkn}
+                  placeholder="Vergi veya TC kimlik numarası"
+                  keyboardType="numeric"
+                />
+
                 {/* ─── KDV Satırları ─── */}
                 <View style={styles.vatSectionHeader}>
                   <Text style={styles.label}>KDV Detayları</Text>
