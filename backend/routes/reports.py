@@ -23,11 +23,12 @@ router = APIRouter(prefix="/api/reports", tags=["Raporlar"])
 
 
 def get_period_expenses(db: Session, user_id: str, start: date, end: date):
-    """Belirli bir dönemdeki giderleri getir."""
+    """Belirli bir dönemdeki giderleri getir — silinmişler hariç."""
     expenses = db.query(Expense).filter(
         Expense.user_id == user_id,
         Expense.receipt_date >= start,
         Expense.receipt_date <= end,
+        Expense.is_deleted == False,
     ).order_by(Expense.receipt_date.asc()).all()
     return expenses
 
@@ -231,6 +232,7 @@ def get_vat_summary(
         Expense.user_id == user.id,
         extract("year", Expense.receipt_date) == year,
         extract("month", Expense.receipt_date) == month,
+        Expense.is_deleted == False,
     ).all()
 
     # KDV oranına göre grupla — çoklu KDV oranlı fişleri doğru orana分离 et

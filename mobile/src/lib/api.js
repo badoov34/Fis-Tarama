@@ -11,7 +11,7 @@ import { Platform } from "react-native";
 // Ortam değişkeninden veya manuel ayardan API adresini al
 // Render deploy: https://fis-tarama-api.onrender.com
 // Lokal geliştirme: http://localhost:8000
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.109:8000";
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.177:8000";
 
 const http = axios.create({
   baseURL: API_BASE,

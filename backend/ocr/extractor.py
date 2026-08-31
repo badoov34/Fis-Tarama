@@ -395,16 +395,29 @@ def extract_vkn(text: str) -> str:
     Türkiye'de:
     - Şirketler: 10 haneli VKN
     - Şahıslar: 11 haneli TCKN
-    Fişlerde genellikle "Vergi No:", "VKN:", "T.C. No:" olarak geçer.
+
+    Yaygın fiş formatları:
+    - "Vergi Dairesi VKN: 5820492073"
+    - "GÜNEŞLİ V.D. 2880451014"
+    - "V.D V.NO:2200621779"
+    - "Vergi No: 1234567890"
+    - "B.MÜKELLEFLER V.D V.NO:2200621779"
     """
     patterns = [
-        # VKN patterns (10 haneli)
-        r"VERG[İI]\s*N[OÖ]\s*:?\s*(\d{10})",
+        # VKN ile doğrudan (en güvenilir)
         r"VKN\s*:?\s*(\d{10})",
-        r"VERG[İI]\s*K[İI]ML[İI]K\s*N[OÖ]\s*:?\s*(\d{10})",
+        # V.D.后面 doğrudan 10 haneli numara
+        r"V\.D\.?\s+(\d{10})",
+        # V.D V.NO:XXXXX
+        r"V\.D\.?\s+V\.?N[OÖ]\s*:?\s*(\d{10})",
+        # Vergi No / Vergi Numarası
+        r"VERG[İI]\s*N[OÖ]\s*:?\s*(\d{10})",
+        r"VERG[İI]\s*N[OÖ]M?A?R?A?S[Iİ]\s*:?\s*(\d{10})",
+        # Mükellefler V.D
+        r"M[ÜU]KELLEFLER\s+V\.D\.?\s*:?\s*(\d{10})",
         # TCKN patterns (11 haneli)
         r"T\.?\s*C\.?\s*N[OÖ]\s*:?\s*(\d{11})",
-        r"T.C\.?\s*:\s*(\d{11})",
+        r"T\.?C\.?\s*:\s*(\d{11})",
         r"KİMLİK\s*N[OÖ]\s*:?\s*(\d{11})",
     ]
     for pattern in patterns:
